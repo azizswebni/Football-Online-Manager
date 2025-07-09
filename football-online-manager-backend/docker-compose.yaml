@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: football_manager_db
+    environment:
+      POSTGRES_DB: football_manager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - football_manager_network
+
+  backend:
+    build: .
+    container_name: football_manager_backend
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=password
+      - DB_NAME=football_manager
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - football_manager_network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+
+networks:
+  football_manager_network:
+    driver: bridge
