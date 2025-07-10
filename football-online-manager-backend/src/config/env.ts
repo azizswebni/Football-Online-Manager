@@ -13,6 +13,10 @@ export const ENV = {
   DB_PASS: process.env.DB_PASS || 'password',
   DB_NAME: process.env.DB_NAME || 'football_manager',
   
+  // Redis Configuration
+  REDIS_HOST: process.env.REDIS_HOST || 'localhost',
+  REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
+  
   // JWT Configuration
   JWT_SECRET: process.env.JWT_SECRET || 'default-secret-change-in-production',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',

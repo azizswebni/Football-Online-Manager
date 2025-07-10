@@ -83,6 +83,7 @@ class App {
       logger.info(`🚀 Server running on port ${this.port}`);
       logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
       logger.info(`🩺 Health check: http://localhost:${this.port}/health`);
+      logger.info(`📚 API docs: http://localhost:${this.port}/api/docs`);
     });
   }
 }
