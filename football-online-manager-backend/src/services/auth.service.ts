@@ -7,14 +7,14 @@ import { generateToken } from '../utils/jwt';
 import { ENV } from '../config/env';
 import logger from '../config/logger';
 import { AuthDto, AuthResponseDto } from '../dtos/auth.dto';
-import { TeamCreationData } from '../interfaces/auth.interface';
+import { TeamCreationData, JwtPayload } from '../interfaces/auth.interface';
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
   private teamRepository = AppDataSource.getRepository(Team);
   private playerRepository = AppDataSource.getRepository(Player);
 
-  async authenticateUser(authData: AuthDto): Promise<AuthResponseDto> {
+  async authenticateUser(authData: AuthDto): Promise<{ user: AuthResponseDto['user']; message: string; token: string }> {
     const { email, password } = authData;
 
     // Check if user exists
@@ -30,22 +30,25 @@ export class AuthService {
         throw new Error('Invalid credentials');
       }
 
-      const token = generateToken({
+      // Create JWT payload with user ID
+      const jwtPayload: JwtPayload = {
         userId: existingUser.id,
         email: existingUser.email,
         role: existingUser.role
-      });
+      };
 
-      logger.info(`User logged in: ${email}`);
+      const token = generateToken(jwtPayload);
+
+      logger.info(`User logged in: ${email} (ID: ${existingUser.id})`);
 
       return {
-        token,
         user: {
           id: existingUser.id,
           email: existingUser.email,
           role: existingUser.role
         },
-        message: 'Login successful'
+        message: 'Login successful',
+        token
       };
     } else {
       // Registration flow
@@ -64,29 +67,48 @@ export class AuthService {
         userEmail: savedUser.email
       });
 
-      const token = generateToken({
+      // Create JWT payload with user ID
+      const jwtPayload: JwtPayload = {
         userId: savedUser.id,
         email: savedUser.email,
         role: savedUser.role
-      });
+      };
 
-      logger.info(`New user registered: ${email}`);
+      const token = generateToken(jwtPayload);
+
+      logger.info(`New user registered: ${email} (ID: ${savedUser.id})`);
 
       return {
-        token,
         user: {
           id: savedUser.id,
           email: savedUser.email,
           role: savedUser.role
         },
-        message: 'Registration successful. Team creation in progress...'
+        message: 'Registration successful. Team creation in progress...',
+        token
       };
     }
   }
 
+  // Helper method to get user by ID from JWT
+  async getUserById(userId: string): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['team']
+    });
+  }
+
+  // Helper method to validate user exists
+  async validateUserExists(userId: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId }
+    });
+    return !!user;
+  }
+
   private async createTeamAsync(teamData: TeamCreationData): Promise<void> {
     try {
-      logger.info(`Starting team creation for user: ${teamData.userEmail}`);
+      logger.info(`Starting team creation for user: ${teamData.userEmail} (ID: ${teamData.userId})`);
 
       // Create team
       const team = this.teamRepository.create({
@@ -104,9 +126,9 @@ export class AuthService {
         team: savedTeam
       });
 
-      logger.info(`Team creation completed for user: ${teamData.userEmail}`);
+      logger.info(`Team creation completed for user: ${teamData.userEmail} (ID: ${teamData.userId})`);
     } catch (error) {
-      logger.error(`Team creation failed for user ${teamData.userEmail}:`, error);
+      logger.error(`Team creation failed for user ${teamData.userEmail} (ID: ${teamData.userId}):`, error);
     }
   }
 

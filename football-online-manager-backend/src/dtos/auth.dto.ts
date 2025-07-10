@@ -17,8 +17,6 @@ import { IsEmail, IsString, MinLength, MaxLength } from 'class-validator';
  *     AuthResponseDto:
  *       type: object
  *       properties:
- *         token:
- *           type: string
  *         user:
  *           type: object
  *           properties:
@@ -52,7 +50,6 @@ export class AuthDto {
 }
 
 export class AuthResponseDto {
-  token!: string;
   user!: {
     id: string;
     email: string;

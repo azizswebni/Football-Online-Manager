@@ -39,7 +39,13 @@ services:
       - DB_NAME=football_manager
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_SECRET=super-secret-jwt-key-change-in-production
+      - COOKIE_SECRET=super-secret-cookie-key-change-in-production
+      - COOKIE_NAME=auth_token
+      - COOKIE_MAX_AGE=86400000
+      - COOKIE_HTTP_ONLY=true
+      - COOKIE_SECURE=false
+      - COOKIE_SAME_SITE=lax
     depends_on:
       - postgres
       - redis

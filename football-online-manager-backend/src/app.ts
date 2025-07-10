@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppDataSource } from './config/data-source';
+import cookieParser from 'cookie-parser';
 import logger from './config/logger';
 import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/notFoundHandler';
@@ -34,6 +35,9 @@ class App {
     // Body parsing middleware
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
+
+    // Cookie parsing middleware
+    this.app.use(cookieParser());
 
     // Compression middleware
     this.app.use(compression());

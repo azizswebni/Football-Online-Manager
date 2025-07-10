@@ -21,6 +21,14 @@ export const ENV = {
   JWT_SECRET: process.env.JWT_SECRET || 'default-secret-change-in-production',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
   
+  // Cookie Configuration
+  COOKIE_SECRET: process.env.COOKIE_SECRET || 'default-cookie-secret-change-in-production',
+  COOKIE_NAME: process.env.COOKIE_NAME || 'auth_token',
+  COOKIE_MAX_AGE: Number(process.env.COOKIE_MAX_AGE) || 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  COOKIE_HTTP_ONLY: process.env.COOKIE_HTTP_ONLY !== 'false', // true by default
+  COOKIE_SECURE: process.env.NODE_ENV === 'production', // true in production
+  COOKIE_SAME_SITE: (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
+  
   // Application Configuration
   BCRYPT_ROUNDS: Number(process.env.BCRYPT_ROUNDS) || 12,
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',

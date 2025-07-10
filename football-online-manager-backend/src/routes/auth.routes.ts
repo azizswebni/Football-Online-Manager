@@ -26,6 +26,11 @@ const authController = new AuthController();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AuthResponseDto'
+ *         headers:
+ *           Set-Cookie:
+ *             description: JWT token set as HTTP-only cookie
+ *             schema:
+ *               type: string
  *       400:
  *         description: Validation or authentication error
  *         content:
@@ -34,5 +39,31 @@ const authController = new AuthController();
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/', validateDto(AuthDto), authController.authenticate.bind(authController));
+
+/**
+ * @openapi
+ * /auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Logout failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/logout', authController.logout.bind(authController));
 
 export default router; 
