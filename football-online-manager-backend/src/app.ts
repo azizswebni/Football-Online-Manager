@@ -1,8 +1,15 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './config/swagger';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppDataSource } from './config/data-source';
+import logger from './config/logger';
+import { errorHandler } from './middlewares/errorHandler';
+import { notFoundHandler } from './middlewares/notFoundHandler';
+import { requestLogger } from './middlewares/requestLogger';
+import authRoutes from './routes/auth.routes';
 
 class App {
   public app: Application;
@@ -31,9 +38,12 @@ class App {
     // Compression middleware
     this.app.use(compression());
 
+    // Request logging middleware
+    this.app.use(requestLogger);
 
     // Health check endpoint
     this.app.get('/health', (req: Request, res: Response) => {
+      logger.info('Health check requested');
       res.status(200).json({
         status: 'OK',
         timestamp: new Date().toISOString(),
@@ -43,40 +53,36 @@ class App {
   }
 
   private initializeRoutes(): void {
+    // API routes
+    this.app.use('/api/auth', authRoutes);
+
     // API documentation endpoint
-    this.app.get('/api', (req: Request, res: Response) => {
-      res.json({
-        message: 'Football Online Manager API',
-        version: '1.0.0',
-        endpoints: {
-          auth: '/api/auth',
-          users: '/api/users',
-          teams: '/api/teams',
-          players: '/api/players'
-        }
-      });
-    });
+    this.app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   }
 
   private initializeErrorHandling(): void {
-   
+    // 404 handler
+    this.app.use(notFoundHandler);
+
+    // Global error handler
+    this.app.use(errorHandler);
   }
 
   public async initializeDatabase(): Promise<void> {
     try {
       await AppDataSource.initialize();
-      console.log('✅ Database connection established');
+      logger.info('✅ Database connection established');
     } catch (error) {
-      console.error('❌ Database connection failed:', error);
+      logger.error('❌ Database connection failed:', error);
       process.exit(1);
     }
   }
 
   public listen(): void {
     this.app.listen(this.port, () => {
-      console.log(`🚀 Server running on port ${this.port}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-      console.log(`�� Health check: http://localhost:${this.port}/health`);
+      logger.info(`🚀 Server running on port ${this.port}`);
+      logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
+      logger.info(`🩺 Health check: http://localhost:${this.port}/health`);
     });
   }
 }
