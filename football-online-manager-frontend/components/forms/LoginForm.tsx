@@ -58,13 +58,8 @@ export function LoginForm() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500))
+      setErrors({ general: "Invalid email or password" })
 
-      // Simulate login logic
-      if (formData.email === "demo@example.com" && formData.password === "password") {
-        onSuccess()
-      } else {
-        setErrors({ general: "Invalid email or password" })
-      }
     } catch (error) {
       setErrors({ general: "An error occurred. Please try again." })
     } finally {
@@ -157,13 +152,13 @@ export function LoginForm() {
         </Button>
       </div>
 
-      {/* Demo Credentials */}
+      {/* Account Info */}
       <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-4">
         <Typography variant="caption" className="text-blue-700 block mb-1">
-          Demo Credentials:
+          No account? No problem!
         </Typography>
         <Typography variant="caption" className="text-blue-600">
-          Email: demo@example.com | Password: password
+          Just enter any email and password—if you don't have an account, one will be created automatically.
         </Typography>
       </div>
     </form>
