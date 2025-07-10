@@ -61,11 +61,14 @@ export class AuthService {
 
       const savedUser = await this.userRepository.save(newUser);
 
-      // Start asynchronous team creation
-      this.createTeamAsync({
-        userId: savedUser.id,
-        userEmail: savedUser.email
-      });
+      // Start team creation after 10 seconds
+      setTimeout(() => {
+        logger.info(`Starting team creation for user: ${savedUser.email} (ID: ${savedUser.id})`);
+        this.createTeamAsync({
+          userId: savedUser.id,
+          userEmail: savedUser.email
+        });
+      }, 10000);
 
       // Create JWT payload with user ID
       const jwtPayload: JwtPayload = {
@@ -113,18 +116,14 @@ export class AuthService {
       // Create team
       const team = this.teamRepository.create({
         name: `${teamData.userEmail.split('@')[0]} FC`,
-        budget: 5000000
+        budget: 5000000,
+        user: { id: teamData.userId }
       });
 
       const savedTeam = await this.teamRepository.save(team);
 
       // Create players asynchronously
       await this.createPlayersAsync(savedTeam.id);
-
-      // Update user with team
-      await this.userRepository.update(teamData.userId, {
-        team: savedTeam
-      });
 
       logger.info(`Team creation completed for user: ${teamData.userEmail} (ID: ${teamData.userId})`);
     } catch (error) {
