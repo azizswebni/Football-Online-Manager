@@ -6,8 +6,11 @@ import { PlayerCard, type Player } from "@/components/molecules/PlayerCard"
 import { SearchFilter } from "@/components/molecules/SearchFilter"
 import { StatusBadge } from "@/components/atoms/StatusBadge"
 import { DollarSign } from "lucide-react"
+import { useTeamStore } from "@/store/team.store"
 
 export function TransferMarketPage() {
+  const { team } = useTeamStore()
+
   const [marketPlayers] = useState<Player[]>([
     {
       id: "1",
@@ -50,6 +53,19 @@ export function TransferMarketPage() {
   const calculateBuyPrice = (askingPrice: string) => {
     const price = Number.parseFloat(askingPrice.replace("$", "").replace("M", ""))
     return (price * 0.95).toFixed(2)
+  }
+
+  if (!team) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+        <Typography variant="display" className="text-slate-900">
+          No Team Created Yet
+        </Typography>
+        <Typography variant="body" color="secondary">
+          Your team not yet created. We are working on it !
+        </Typography>
+      </div>
+    );
   }
 
   return (

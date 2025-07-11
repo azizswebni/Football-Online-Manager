@@ -3,9 +3,8 @@
 import type React from "react"
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, DollarSign, User, Home } from "lucide-react"
+import { Users, DollarSign } from "lucide-react"
 import { cn } from "@/lib/utils"
-
 interface NavigationItem {
   id: string
   label: string
@@ -27,6 +26,7 @@ const navigationItems: NavigationItem[] = [
 ]
 
 export function AppNavigation({ activeTab, onTabChange, className }: AppNavigationProps) {
+
   return (
     <nav className={cn("bg-white border-b border-slate-200 sticky top-16 z-40", className)}>
       <div className="container mx-auto px-4">

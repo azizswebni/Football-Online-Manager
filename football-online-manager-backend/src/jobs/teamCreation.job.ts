@@ -4,6 +4,7 @@ import { Team } from '../models/Team';
 import { User } from '../models/User';
 import { Player } from '../models/Player';
 import logger from '../config/logger';
+import { getIO } from '../config/socket';
 
 interface TeamCreationJobData {
   userId: string;
@@ -56,8 +57,40 @@ export async function processTeamCreation(job: Job<TeamCreationJobData>): Promis
     
     logger.info(`Team creation completed for user: ${userEmail} (ID: ${userId})`);
     
+    // Emit Socket.IO event to notify frontend
+    try {
+      const io = getIO();
+      io.to(`user-${userId}`).emit('team-created', {
+        success: true,
+        message: 'Team creation completed successfully!',
+        teamId: savedTeam.id,
+        teamName: savedTeam.name,
+        playerCount: 20,
+        timestamp: new Date().toISOString()
+      });
+      
+      logger.info(`Socket.IO event emitted for user: ${userId}`);
+    } catch (socketError) {
+      logger.error(`Failed to emit Socket.IO event for user ${userId}:`, socketError);
+      // Don't throw error here, team creation was successful
+    }
+    
   } catch (error) {
     logger.error(`Team creation failed for user ${userEmail}:`, error);
+    
+    // Emit error event to frontend
+    try {
+      const io = getIO();
+      io.to(`user-${userId}`).emit('team-creation-failed', {
+        success: false,
+        message: 'Team creation failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    } catch (socketError) {
+      logger.error(`Failed to emit Socket.IO error event for user ${userId}:`, socketError);
+    }
+    
     throw error;
   }
 }

@@ -18,7 +18,7 @@ import { AxiosError } from "axios"
 import { toast } from "sonner"
 import { useRouter } from 'next/navigation'
 import { LoginResponse } from "@/lib/interfaces"
-import { useUserStore } from "@/store/auth.store"
+import { useUserStore } from "@/store/user.store"
 
 // Zod schema for login form validation
 const loginSchema = z.object({

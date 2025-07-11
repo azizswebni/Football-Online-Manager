@@ -1,4 +1,5 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
 import cors from 'cors';
@@ -15,9 +16,11 @@ import userRoutes from './routes/user.routes';
 import transferRoutes from './routes/transfer.routes';
 import { initializeJobProcessors } from './jobs';
 import { serverAdapter } from './config/bullBoard';
+import { initializeSocket } from './config/socket';
 
 class App {
   public app: Application;
+  public server: any;
   public port: number;
 
   constructor() {
@@ -101,13 +104,36 @@ class App {
     }
   }
 
+  public initializeSocketIO(): void {
+    try {
+      // Create HTTP server
+      this.server = createServer(this.app);
+      
+      // Initialize Socket.IO
+      const io = initializeSocket(this.server);
+      
+      // Store io instance globally
+      (global as any).io = io;
+      
+      logger.info('✅ Socket.IO initialized');
+    } catch (error) {
+      logger.error('❌ Socket.IO initialization failed:', error);
+      process.exit(1);
+    }
+  }
+
   public listen(): void {
-    this.app.listen(this.port, () => {
+    if (!this.server) {
+      throw new Error('HTTP server not initialized');
+    }
+
+    this.server.listen(this.port, () => {
       logger.info(`🚀 Server running on port ${this.port}`);
       logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
       logger.info(`🩺 Health check: http://localhost:${this.port}/health`);
       logger.info(`📚 API docs: http://localhost:${this.port}/api/docs`);
       logger.info(`📈 Queue monitoring: http://localhost:${this.port}/admin/queues`);
+      logger.info(`🔌 Socket.IO: ws://localhost:${this.port}`);
     });
   }
 }

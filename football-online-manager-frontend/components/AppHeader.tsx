@@ -5,9 +5,9 @@ import { IconButton } from "@/components/atoms/IconButton"
 import { Trophy, DollarSign, Menu, LogOut } from "lucide-react"
 import { useMutation } from "@tanstack/react-query"
 import { LogoutService } from "@/services/auth.service"
-import { useRouter } from "next/navigation"
 import { AxiosError } from "axios"
 import { toast } from "sonner"
+import clearStorages from "@/lib/clearStorages"
 
 interface User {
   email: string | null
@@ -21,19 +21,17 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ user, onMenuToggle }: AppHeaderProps) {
-
-  const router = useRouter();
   const logoutMutation = useMutation({
     mutationFn: LogoutService,
     onSuccess: () => {
-      router.push("/");
+      clearStorages()
+      window.location.href = "/"
     },
     onError: (error: AxiosError<{ message: string }>) => {
       const message = error.response?.data.message ?? "An unexpected error occurred";
       toast(message);
     },
   });
-
   const onClickLogout = ()=>{
     logoutMutation.mutate()
   }

@@ -12,6 +12,9 @@ const startServer = async (): Promise<void> => {
     // Initialize job queues
     app.initializeJobQueues();
     
+    // Initialize Socket.IO
+    app.initializeSocketIO();
+    
     // Start the server
     app.listen();
     

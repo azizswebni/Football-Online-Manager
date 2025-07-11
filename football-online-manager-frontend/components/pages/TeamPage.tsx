@@ -6,9 +6,11 @@ import { PlayerCard, type Player } from "@/components/molecules/PlayerCard"
 import { SearchFilter } from "@/components/molecules/SearchFilter"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Filter, Plus, Target, Shield, Zap, Trophy } from "lucide-react"
+import { Target, Shield, Zap, Trophy } from "lucide-react"
+import { useTeamStore } from "@/store/team.store"
 
 export function TeamPage() {
+  const { team } = useTeamStore()
   const [players] = useState<Player[]>([
     { id: "1", name: "Marcus Silva", position: "ST", rating: 87, value: "$2.1M", team: "Your Team", isOwned: true },
     { id: "2", name: "David Chen", position: "CM", rating: 84, value: "$1.8M", team: "Your Team", isOwned: true },
@@ -20,6 +22,19 @@ export function TeamPage() {
     { key: "rating", label: "Rating", options: ["80+", "75-79", "70-74", "Below 70"] },
   ]
 
+  if (!team) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+        <Typography variant="display" className="text-slate-900">
+          No Team Created Yet
+        </Typography>
+        <Typography variant="body" color="secondary">
+          Your team not yet created. We are working on it !
+        </Typography>
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-6">
       {/* Page Header */}

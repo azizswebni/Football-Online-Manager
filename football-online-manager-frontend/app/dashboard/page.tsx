@@ -7,7 +7,7 @@ import { DashboardPage as DashboardPageComponent } from "@/components/pages/Dash
 import { TeamPage } from "@/components/pages/TeamPage"
 import { TransferMarketPage } from "@/components/pages/TransferMarketPage"
 import { ProfilePage } from "@/components/pages/ProfilePage"
-import { useUserStore } from "@/store/auth.store"
+import { useUserStore } from "@/store/user.store"
 
 
 

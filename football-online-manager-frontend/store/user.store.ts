@@ -12,7 +12,7 @@ interface UserState {
     role: string,
     id: string,
   ) => void;
-  clearUserData: () => void;
+  clearUserStore: () => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -27,7 +27,7 @@ export const useUserStore = create<UserState>()(
           role,
           id,
         }),
-      clearUserData: () =>
+      clearUserStore: () =>
         set({
           email: null,
           role: null,
