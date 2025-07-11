@@ -12,42 +12,39 @@ import { useUserStore } from "@/store/auth.store"
 
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState("dashboard")
-  const {email,role} = useUserStore()
+  const [activeTab, setActiveTab] = useState("team")
+  const { email, role } = useUserStore()
   const user = {
     email: email,
-    initials: role?.toUpperCase().substring(0,2),
-    budget: 3250000,
+    initials: role?.toUpperCase().substring(0, 2) as string,
+    budget: "N/A",
   }
 
   const renderPage = () => {
     switch (activeTab) {
-      case "dashboard":
-        return <DashboardPageComponent />
+      /* case "dashboard":
+        return <DashboardPageComponent /> */
       case "team":
         return <TeamPage />
       case "transfers":
         return <TransferMarketPage />
-      case "profile":
-        return <ProfilePage />
+      /* case "profile":
+        return <ProfilePage /> */
       default:
         return <DashboardPage />
     }
   }
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex flex-col">
-        <AppHeader
-          user={user}
-          onMenuToggle={() => console.log("Menu toggled")}
-        />
-
-        <AppNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-
-        <main className="flex-1">
-          <div className="container mx-auto px-4 py-8">{renderPage()}</div>
-        </main>
-
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex flex-col">
+      <AppHeader
+        user={user}
+        onMenuToggle={() => console.log("Menu toggled")}
+      />
+      <AppNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-8">{renderPage()}</div>
+      </main>
+    </div>
   )
 }

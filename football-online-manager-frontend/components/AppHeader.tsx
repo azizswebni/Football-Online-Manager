@@ -12,7 +12,7 @@ import { toast } from "sonner"
 interface User {
   email: string | null
   initials: string
-  budget: number
+  budget: string
 }
 
 interface AppHeaderProps {
@@ -73,7 +73,7 @@ export function AppHeader({ user, onMenuToggle }: AppHeaderProps) {
           <div className="flex items-center space-x-4">
             {/* Budget Display */}
             <StatusBadge status="success" className="bg-green-500/10 text-green-400 border-green-500 hidden sm:flex">
-              <DollarSign className="w-4 h-4 mr-1" />${user.budget.toLocaleString()}
+              <DollarSign className="w-4 h-4 mr-1" />{user.budget.toLocaleString()}
             </StatusBadge>
 
 

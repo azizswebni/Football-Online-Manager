@@ -32,16 +32,6 @@ export function TeamPage() {
             22 players • $45.2M total value
           </Typography>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-          <Button className="bg-green-500 hover:bg-green-600">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Player
-          </Button>
-        </div>
       </div>
 
       {/* Search and Filter */}

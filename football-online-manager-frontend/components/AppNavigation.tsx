@@ -20,10 +20,10 @@ interface AppNavigationProps {
 }
 
 const navigationItems: NavigationItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: Home },
+  /* { id: "dashboard", label: "Dashboard", icon: Home }, */
   { id: "team", label: "My Team", icon: Users },
   { id: "transfers", label: "Transfer Market", icon: DollarSign },
-  { id: "profile", label: "Profile", icon: User },
+  /* { id: "profile", label: "Profile", icon: User }, */
 ]
 
 export function AppNavigation({ activeTab, onTabChange, className }: AppNavigationProps) {
@@ -31,7 +31,7 @@ export function AppNavigation({ activeTab, onTabChange, className }: AppNavigati
     <nav className={cn("bg-white border-b border-slate-200 sticky top-16 z-40", className)}>
       <div className="container mx-auto px-4">
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-transparent h-14">
+          <TabsList className="grid w-full grid-cols-2 bg-transparent h-14">
             {navigationItems.map((item) => {
               const Icon = item.icon
               return (
