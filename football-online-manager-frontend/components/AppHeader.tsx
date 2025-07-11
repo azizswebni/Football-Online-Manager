@@ -1,28 +1,42 @@
-"use client"
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Typography } from "@/components/atoms/Typography"
 import { StatusBadge } from "@/components/atoms/StatusBadge"
 import { IconButton } from "@/components/atoms/IconButton"
-import { Trophy, DollarSign, Bell, Settings, Menu } from "lucide-react"
-import { useState } from "react"
+import { Trophy, DollarSign, Menu, LogOut } from "lucide-react"
+import { useMutation } from "@tanstack/react-query"
+import { LogoutService } from "@/services/auth.service"
+import { useRouter } from "next/navigation"
+import { AxiosError } from "axios"
+import { toast } from "sonner"
 
 interface User {
-  name: string
+  email: string | null
   initials: string
   budget: number
-  level: number
 }
 
 interface AppHeaderProps {
   user: User
   onMenuToggle?: () => void
-  onNotifications?: () => void
-  onSettings?: () => void
 }
 
-export function AppHeader({ user, onMenuToggle, onNotifications, onSettings }: AppHeaderProps) {
-  const [notificationCount] = useState(3)
+export function AppHeader({ user, onMenuToggle }: AppHeaderProps) {
+
+  const router = useRouter();
+  const logoutMutation = useMutation({
+    mutationFn: LogoutService,
+    onSuccess: () => {
+      router.push("/");
+    },
+    onError: (error: AxiosError<{ message: string }>) => {
+      const message = error.response?.data.message ?? "An unexpected error occurred";
+      toast(message);
+    },
+  });
+
+  const onClickLogout = ()=>{
+    logoutMutation.mutate()
+  }
 
   return (
     <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
@@ -62,45 +76,28 @@ export function AppHeader({ user, onMenuToggle, onNotifications, onSettings }: A
               <DollarSign className="w-4 h-4 mr-1" />${user.budget.toLocaleString()}
             </StatusBadge>
 
-            {/* Notifications */}
-            <div className="relative">
-              <IconButton
-                icon={Bell}
-                variant="ghost"
-                onClick={onNotifications}
-                aria-label="Notifications"
-                className="text-white hover:bg-slate-800"
-              />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
-                  {notificationCount}
-                </span>
-              )}
-            </div>
 
-            {/* Settings */}
-            <IconButton
-              icon={Settings}
-              variant="ghost"
-              onClick={onSettings}
-              aria-label="Settings"
-              className="text-white hover:bg-slate-800 hidden sm:flex"
-            />
 
             {/* User Avatar */}
             <div className="flex items-center space-x-2">
               <div className="text-right hidden sm:block">
                 <Typography variant="body" className="text-white text-sm">
-                  {user.name}
-                </Typography>
-                <Typography variant="caption" className="text-slate-300">
-                  Level {user.level}
+                  {user.email}
                 </Typography>
               </div>
               <Avatar>
                 <AvatarFallback className="bg-green-500 text-white">{user.initials}</AvatarFallback>
               </Avatar>
             </div>
+
+            {/* Logout */}
+            <IconButton
+              icon={LogOut}
+              variant="ghost"
+              onClick={onClickLogout}
+              aria-label="Logout"
+              className="text-white hover:bg-slate-800 hidden sm:flex"
+            />
           </div>
         </div>
       </div>

@@ -7,15 +7,17 @@ import { DashboardPage as DashboardPageComponent } from "@/components/pages/Dash
 import { TeamPage } from "@/components/pages/TeamPage"
 import { TransferMarketPage } from "@/components/pages/TransferMarketPage"
 import { ProfilePage } from "@/components/pages/ProfilePage"
+import { useUserStore } from "@/store/auth.store"
+
+
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("dashboard")
-
+  const {email,role} = useUserStore()
   const user = {
-    name: "John Doe",
-    initials: "JD",
+    email: email,
+    initials: role?.toUpperCase().substring(0,2),
     budget: 3250000,
-    level: 12,
   }
 
   const renderPage = () => {
@@ -34,20 +36,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex flex-col">
-      <AppHeader
-        user={user}
-        onMenuToggle={() => console.log("Menu toggled")}
-        onNotifications={() => console.log("Notifications opened")}
-        onSettings={() => console.log("Settings opened")}
-      />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex flex-col">
+        <AppHeader
+          user={user}
+          onMenuToggle={() => console.log("Menu toggled")}
+        />
 
-      <AppNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <AppNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8">{renderPage()}</div>
-      </main>
+        <main className="flex-1">
+          <div className="container mx-auto px-4 py-8">{renderPage()}</div>
+        </main>
 
-    </div>
+      </div>
   )
 }
