@@ -50,7 +50,7 @@ export function AuthForm() {
     mutationFn: loginService,
     onSuccess: (data: LoginResponse) => {
       toast.info(data.message)
-      setUserData(data.user.email,data.user.role,data.user.id)
+      setUserData(data.user.email,data.user.role,data.user.id,data.hasTeam)
       router.push("/dashboard");
     },
     onError: (error: AxiosError<{ message: string }>) => {

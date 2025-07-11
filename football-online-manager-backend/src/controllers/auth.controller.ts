@@ -22,8 +22,7 @@ export class AuthController {
         path: '/'
       });
       
-      // Return response without token in body
-      res.status(200).json({
+      res.status(result.code).json({
         user: result.user,
         message: result.message
       });

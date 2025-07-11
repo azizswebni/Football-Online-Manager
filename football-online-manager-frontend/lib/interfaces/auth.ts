@@ -4,5 +4,6 @@ export interface LoginResponse {
       email:string
       role:string
     }
-    message:string
+    message:string,
+    hasTeam:boolean
   }

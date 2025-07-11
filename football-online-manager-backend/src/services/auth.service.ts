@@ -15,7 +15,7 @@ export class AuthService {
   private teamRepository = AppDataSource.getRepository(Team);
   private playerRepository = AppDataSource.getRepository(Player);
 
-  async authenticateUser(authData: AuthDto): Promise<{ user: AuthResponseDto['user']; message: string; token: string }> {
+  async authenticateUser(authData: AuthDto): Promise<{ user: AuthResponseDto['user']; message: string; token: string,code:number }> {
     const { email, password } = authData;
 
     // Check if user exists
@@ -49,7 +49,8 @@ export class AuthService {
           role: existingUser.role
         },
         message: 'Login successful',
-        token
+        token,
+        code:200
       };
     } else {
       // Registration flow
@@ -91,7 +92,8 @@ export class AuthService {
           role: savedUser.role
         },
         message: 'Registration successful. Team creation in progress...',
-        token
+        token,
+        code:201
       };
     }
   }

@@ -12,7 +12,7 @@ import clearStorages from "@/lib/clearStorages"
 interface User {
   email: string | null
   initials: string
-  budget: string
+  budget: number | string
 }
 
 interface AppHeaderProps {

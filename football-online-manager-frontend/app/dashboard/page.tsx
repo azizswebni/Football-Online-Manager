@@ -8,18 +8,19 @@ import { TeamPage } from "@/components/pages/TeamPage"
 import { TransferMarketPage } from "@/components/pages/TransferMarketPage"
 import { ProfilePage } from "@/components/pages/ProfilePage"
 import { useUserStore } from "@/store/user.store"
+import { useTeamStore } from "@/store/team.store"
 
 
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("team")
   const { email, role } = useUserStore()
+  const { team }= useTeamStore()
   const user = {
     email: email,
     initials: role?.toUpperCase().substring(0, 2) as string,
-    budget: "N/A",
+    budget: team?.budget || 'N/A'
   }
-
   const renderPage = () => {
     switch (activeTab) {
       /* case "dashboard":

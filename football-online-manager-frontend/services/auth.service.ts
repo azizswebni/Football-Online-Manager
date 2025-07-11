@@ -12,7 +12,7 @@ export const loginService = async ({
     email,
     password,
   });
-  return response.data;
+  return { ...response.data, hasTeam: response.status != 201 };
 };
 
 

@@ -7,10 +7,12 @@ interface UserState {
   id: string | null;
   email: string | null;
   role: string | null;
+  hasTeam: boolean;
   setUserData: (
     email: string,
     role: string,
     id: string,
+    hasTeam: boolean
   ) => void;
   clearUserStore: () => void;
 }
@@ -21,17 +23,20 @@ export const useUserStore = create<UserState>()(
       email: null,
       id: null,
       role: null,
-      setUserData: (email: string, role: string, id: string) =>
+      hasTeam: false,
+      setUserData: (email: string, role: string, id: string, hasTeam: boolean) =>
         set({
           email,
           role,
           id,
+          hasTeam
         }),
       clearUserStore: () =>
         set({
           email: null,
           role: null,
           id: null,
+          hasTeam: false,
         }),
     }),
     {
@@ -41,6 +46,7 @@ export const useUserStore = create<UserState>()(
         email: state.email,
         id: state.id,
         role: state.role,
+        hasTeam: state.hasTeam,
       }),
     }
   )

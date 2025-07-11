@@ -3,8 +3,8 @@ import { Team, TeamStats } from "@/lib/interfaces";
 
 
 export const getTeamService = async (): Promise<Team> => {
-    const response = await Axios.get<Team>('/user/team');
-    return response.data
+    const response = await Axios.get<{team:Team}>('/user/team');
+    return response.data.team
 }
 
 export const getTeamStatsService = async (): Promise<TeamStats> => {
