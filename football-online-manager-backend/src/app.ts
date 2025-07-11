@@ -11,6 +11,7 @@ import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/notFoundHandler';
 import { requestLogger } from './middlewares/requestLogger';
 import authRoutes from './routes/auth.routes';
+import { initializeJobProcessors } from './jobs';
 
 class App {
   public app: Application;
@@ -78,6 +79,16 @@ class App {
       logger.info('✅ Database connection established');
     } catch (error) {
       logger.error('❌ Database connection failed:', error);
+      process.exit(1);
+    }
+  }
+
+  public initializeJobQueues(): void {
+    try {
+      initializeJobProcessors();
+      logger.info('✅ Job queues initialized');
+    } catch (error) {
+      logger.error('❌ Job queues initialization failed:', error);
       process.exit(1);
     }
   }

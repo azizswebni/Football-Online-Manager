@@ -8,6 +8,7 @@ import { ENV } from '../config/env';
 import logger from '../config/logger';
 import { AuthDto, AuthResponseDto } from '../dtos/auth.dto';
 import { TeamCreationData, JwtPayload } from '../interfaces/auth.interface';
+import { teamCreationQueue } from '../config/queue';
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -61,14 +62,16 @@ export class AuthService {
 
       const savedUser = await this.userRepository.save(newUser);
 
-      // Start team creation after 10 seconds
-      setTimeout(() => {
-        logger.info(`Starting team creation for user: ${savedUser.email} (ID: ${savedUser.id})`);
-        this.createTeamAsync({
-          userId: savedUser.id,
-          userEmail: savedUser.email
-        });
-      }, 10000);
+      // Add team creation job to queue
+      await teamCreationQueue.add({
+        userId: savedUser.id,
+        userEmail: savedUser.email
+      }, {
+        delay: 10000, // 10 second delay
+        jobId: `team-creation-${savedUser.id}` // Prevent duplicate jobs
+      });
+
+      logger.info(`Team creation job queued for user: ${savedUser.email} (ID: ${savedUser.id})`);
 
       // Create JWT payload with user ID
       const jwtPayload: JwtPayload = {

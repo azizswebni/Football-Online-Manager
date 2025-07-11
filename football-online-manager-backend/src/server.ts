@@ -9,6 +9,9 @@ const startServer = async (): Promise<void> => {
     // Initialize database connection
     await app.initializeDatabase();
     
+    // Initialize job queues
+    app.initializeJobQueues();
+    
     // Start the server
     app.listen();
     
