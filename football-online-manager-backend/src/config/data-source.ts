@@ -3,6 +3,7 @@ import { ENV } from './env';
 import { User } from '../models/User';
 import { Team } from '../models/Team';
 import { Player } from '../models/Player';
+import { Transfer } from '../models/Transfer';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -13,6 +14,6 @@ export const AppDataSource = new DataSource({
   database: ENV.DB_NAME,
   synchronize: ENV.NODE_ENV === 'development', // true for dev only
   logging: ENV.NODE_ENV === 'development',
-  entities: [User, Team, Player],
+  entities: [User, Team, Player, Transfer],
   migrations: ['dist/migrations/*.js']
 });

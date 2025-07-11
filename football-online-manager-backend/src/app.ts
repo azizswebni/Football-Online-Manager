@@ -13,6 +13,7 @@ import { requestLogger } from './middlewares/requestLogger';
 import authRoutes from './routes/auth.routes';
 import { initializeJobProcessors } from './jobs';
 import { serverAdapter } from './config/bullBoard';
+import transferRoutes from './routes/transfer.routes';
 
 class App {
   public app: Application;
@@ -61,6 +62,7 @@ class App {
   private initializeRoutes(): void {
     // API routes
     this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/transfer', transferRoutes);
 
     // API documentation endpoint
     this.app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Team } from './Team';
+import { Transfer } from './Transfer';
 
 export type PlayerPosition = 'GK' | 'DEF' | 'MID' | 'FWD';
 
@@ -25,6 +26,9 @@ export class Player {
 
   @ManyToOne(() => Team, team => team.players)
   team!: Team;
+
+  @OneToMany(() => Transfer, transfer => transfer.player)
+  transfers!: Transfer[];
 
   @CreateDateColumn()
   createdAt!: Date;
