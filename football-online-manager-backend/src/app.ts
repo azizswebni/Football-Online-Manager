@@ -12,6 +12,7 @@ import { notFoundHandler } from './middlewares/notFoundHandler';
 import { requestLogger } from './middlewares/requestLogger';
 import authRoutes from './routes/auth.routes';
 import { initializeJobProcessors } from './jobs';
+import { serverAdapter } from './config/bullBoard';
 
 class App {
   public app: Application;
@@ -63,6 +64,9 @@ class App {
 
     // API documentation endpoint
     this.app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+    // Bull Board monitoring dashboard
+    this.app.use('/admin/queues', serverAdapter.getRouter());
   }
 
   private initializeErrorHandling(): void {
@@ -99,6 +103,7 @@ class App {
       logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
       logger.info(`🩺 Health check: http://localhost:${this.port}/health`);
       logger.info(`📚 API docs: http://localhost:${this.port}/api/docs`);
+      logger.info(`📈 Queue monitoring: http://localhost:${this.port}/admin/queues`);
     });
   }
 }

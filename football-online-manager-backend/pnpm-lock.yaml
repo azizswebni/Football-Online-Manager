@@ -8,6 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@bull-board/api':
+        specifier: ^6.11.0
+        version: 6.11.0(@bull-board/ui@6.11.0)
+      '@bull-board/express':
+        specifier: ^6.11.0
+        version: 6.11.0
+      '@bull-board/ui':
+        specifier: ^6.11.0
+        version: 6.11.0
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -309,6 +318,17 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+
+  '@bull-board/api@6.11.0':
+    resolution: {integrity: sha512-HLbIuXIthrgeVRmN7Vec9/7ZKWx8i1xTC6Nzi//l7ua+Xu5wn6f/aZllUNVzty5ilLTHqWFkfVOwpuN91o7yxA==}
+    peerDependencies:
+      '@bull-board/ui': 6.11.0
+
+  '@bull-board/express@6.11.0':
+    resolution: {integrity: sha512-dYejXl867e3tQElKwUstxzKpkTEJYWy9Cgbw0scYx+MyTvQS7A+gCBVdhdEMGqk3LdUDAzDtvA9cQnCHLC+2Sw==}
+
+  '@bull-board/ui@6.11.0':
+    resolution: {integrity: sha512-NB2mYr8l850BOLzytUyeYl8T3M9ZgPDDfT9WTOCVCDPr77kFF7iEM5jSE9AZg86bmZyWAgO/ogOUJaPSCNHY7g==}
 
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
@@ -2158,6 +2178,9 @@ packages:
     resolution: {integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==}
     engines: {node: '>=4'}
 
+  redis-info@3.1.0:
+    resolution: {integrity: sha512-ER4L9Sh/vm63DkIE0bkSjxluQlioBiBgf5w1UuldaW/3vPcecdljVDisZhmnCMvsxHNiARTTDDHGg9cGwTfrKg==}
+
   redis-parser@3.0.0:
     resolution: {integrity: sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==}
     engines: {node: '>=4'}
@@ -2946,6 +2969,24 @@ snapshots:
       '@babel/helper-validator-identifier': 7.27.1
 
   '@bcoe/v8-coverage@0.2.3': {}
+
+  '@bull-board/api@6.11.0(@bull-board/ui@6.11.0)':
+    dependencies:
+      '@bull-board/ui': 6.11.0
+      redis-info: 3.1.0
+
+  '@bull-board/express@6.11.0':
+    dependencies:
+      '@bull-board/api': 6.11.0(@bull-board/ui@6.11.0)
+      '@bull-board/ui': 6.11.0
+      ejs: 3.1.10
+      express: 5.1.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@bull-board/ui@6.11.0':
+    dependencies:
+      '@bull-board/api': 6.11.0(@bull-board/ui@6.11.0)
 
   '@colors/colors@1.6.0': {}
 
@@ -5143,6 +5184,10 @@ snapshots:
       picomatch: 2.3.1
 
   redis-errors@1.2.0: {}
+
+  redis-info@3.1.0:
+    dependencies:
+      lodash: 4.17.21
 
   redis-parser@3.0.0:
     dependencies:
