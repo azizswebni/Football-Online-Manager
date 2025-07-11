@@ -11,9 +11,10 @@ import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/notFoundHandler';
 import { requestLogger } from './middlewares/requestLogger';
 import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
+import transferRoutes from './routes/transfer.routes';
 import { initializeJobProcessors } from './jobs';
 import { serverAdapter } from './config/bullBoard';
-import transferRoutes from './routes/transfer.routes';
 
 class App {
   public app: Application;
@@ -62,6 +63,7 @@ class App {
   private initializeRoutes(): void {
     // API routes
     this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/user', userRoutes);
     this.app.use('/api/transfer', transferRoutes);
 
     // API documentation endpoint
