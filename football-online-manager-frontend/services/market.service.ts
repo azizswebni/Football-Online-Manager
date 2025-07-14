@@ -16,11 +16,10 @@ export const addPlayerToTransferMarketService = async ({
   return response.data;
 };
 
-// Remove player from transfer market
 export const removePlayerFromTransferMarketService = async (
-  playerId: string
+  transferId: string
 ): Promise<void> => {
-  const response = await Axios.delete(`/transfer/${playerId}`);
+  const response = await Axios.delete(`/transfer/${transferId}`);
   return response.data;
 };
 

@@ -1,71 +1,161 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Typography } from "@/components/atoms/Typography"
 import { SearchFilter } from "@/components/molecules/SearchFilter"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Target, Shield, Zap, Trophy } from "lucide-react"
 import { useTeamStore } from "@/store/team.store"
-import { useDebouncedCallback } from 'use-debounce';
-import { useSearchParams, usePathname, useRouter } from 'next/navigation';
+import { useDebouncedCallback } from 'use-debounce'
+import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 import { Player } from "@/lib/interfaces"
 import { PlayerCard } from "../molecules/PlayerCard"
+import { toast } from "sonner"
+import { 
+  addPlayerToTransferMarketService, 
+  removePlayerFromTransferMarketService 
+} from "@/services/market.service"
+import { getTeamService } from "@/services/team.service"
 
-// Fake mutations - replace with real API calls later
-const useMutations = () => {
-  const addToTransferMarket = async (playerId: string, askingPrice: number) => {
-    console.log(`Adding player ${playerId} to transfer market with asking price: $${askingPrice}`);
-    // Fake API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true });
-      }, 1000);
-    });
-  };
+// Query keys for React Query
+const QUERY_KEYS = {
+  TRANSFER_MARKET: ['transferMarket'],
+  TEAM: ['team'],
+  PLAYERS: ['players']
+} as const
 
-  const removeFromTransferMarket = async (playerId: string) => {
-    console.log(`Removing player ${playerId} from transfer market`);
-    // Fake API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true });
-      }, 1000);
-    });
-  };
+interface TransferMarketMutationData {
+  playerId: string
+  askingPrice: number
+}
 
-  const sellPlayer = async (playerId: string) => {
-    console.log(`Selling player ${playerId}`);
-    // Fake API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true });
-      }, 1000);
-    });
-  };
-
-  return {
-    addToTransferMarket,
-    removeFromTransferMarket,
-    sellPlayer
-  };
-};
+interface RemoveFromMarketMutationData {
+  playerId: string
+  transferId: string
+}
 
 export function TeamPage() {
-  const { team, updatePlayer } = useTeamStore()
-  const pathname = usePathname();
-  const { replace } = useRouter();
-  const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([]);
-  const [loadingPlayers, setLoadingPlayers] = useState<Set<string>>(new Set());
+  const { team, updatePlayer,setTeam } = useTeamStore()
+  const queryClient = useQueryClient()
+  const pathname = usePathname()
+  const { replace } = useRouter()
+  const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([])
   
-  const mutations = useMutations();
+  const searchParams = useSearchParams()
+
+  // Add to transfer market mutation
+  const addToTransferMarketMutation = useMutation({
+    mutationFn: async ({ playerId, askingPrice }: TransferMarketMutationData) => {
+      await addPlayerToTransferMarketService({ playerId, askingPrice })
+      return { playerId, askingPrice }
+    },
+    onMutate: async ({ playerId, askingPrice }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.TEAM })
+
+      // Return context for rollback
+      return { playerId, askingPrice }
+    },
+    onSuccess: async ({ askingPrice }) => {
+      toast.success(`Player added to transfer market for $${askingPrice.toLocaleString()}`)
+      const teamData = await getTeamService();
+      setTeam(teamData);
+    },
+    onError: (error, { playerId }) => {
+      console.error('Failed to add player to transfer market:', error)
+      
+      // Rollback optimistic update
+      updatePlayer(playerId, {
+        isInTransferMarket: false,
+        askingPrice: undefined,
+        transferId: undefined
+      })
+      
+      toast.error('Failed to add player to transfer market. Please try again.')
+    }
+  })
+
+  // Remove from transfer market mutation
+  const removeFromTransferMarketMutation = useMutation({
+    mutationFn: async ({ transferId }: RemoveFromMarketMutationData) => {
+      await removePlayerFromTransferMarketService(transferId)
+      return { transferId }
+    },
+    onMutate: async ({ playerId, transferId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.TEAM })
+      
+      // Store previous state for rollback
+      const previousPlayer = team?.players.find(p => p.id === playerId)
+      
+      // Optimistically update the player
+      updatePlayer(playerId, {
+        isInTransferMarket: false,
+        askingPrice: undefined,
+        transferId: undefined
+      })
+      
+      // Return context for rollback
+      return { playerId, transferId, previousPlayer }
+    },
+    onSuccess: ({ transferId }) => {
+      toast.success('Player removed from transfer market')
+      
+      // Invalidate and refetch related queries
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.TRANSFER_MARKET })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.TEAM })
+    },
+    onError: (error, { playerId, transferId }, context) => {
+      console.error('Failed to remove player from transfer market:', error)
+      
+      // Rollback optimistic update
+      if (context?.previousPlayer) {
+        updatePlayer(playerId, {
+          isInTransferMarket: context.previousPlayer.isInTransferMarket,
+          askingPrice: context.previousPlayer.askingPrice,
+          transferId: context.previousPlayer.transferId
+        })
+      }
+      
+      toast.error('Failed to remove player from transfer market. Please try again.')
+    }
+  })
+
+  // Sell player mutation (placeholder - replace with actual service)
+  const sellPlayerMutation = useMutation({
+    mutationFn: async (playerId: string) => {
+      // Replace with actual sell player service
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ success: true })
+        }, 1000)
+      })
+    },
+    onMutate: async (playerId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.TEAM })
+      
+      return { playerId }
+    },
+    onSuccess: (_, playerId) => {
+      toast.success('Player sold successfully')
+      
+      // Invalidate and refetch related queries
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.TEAM })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PLAYERS })
+    },
+    onError: (error, playerId) => {
+      console.error('Failed to sell player:', error)
+      toast.error('Failed to sell player. Please try again.')
+    }
+  })
 
   useEffect(() => {
     if (team?.players) {
-      setFilteredPlayers(team.players);
+      setFilteredPlayers(team.players)
     }
-  }, [team]);
-
-  const searchParams = useSearchParams();
+  }, [team])
 
   const getPriceRange = () => {
     if (!team?.players || team.players.length === 0) return { min: 0, max: 1000000 }
@@ -79,140 +169,109 @@ export function TeamPage() {
 
   const priceRange = getPriceRange()
 
-  const handleSearch = useDebouncedCallback((term) => {
-    const params = new URLSearchParams(searchParams);
+  const handleSearch = useDebouncedCallback((term: string) => {
+    const params = new URLSearchParams(searchParams)
     if (term) {
-      params.set('playerName', term);
+      params.set('playerName', term)
     } else {
-      params.delete('playerName');
+      params.delete('playerName')
     }
-    replace(`${pathname}?${params.toString()}`);
+    replace(`${pathname}?${params.toString()}`)
     
     // Apply search filter
-    applyFilters(term, getCurrentFilters());
-  }, 500);
+    applyFilters(term, getCurrentFilters())
+  }, 500)
 
   const getCurrentFilters = () => {
     // Get current filters from state or URL params
-    return {}; // You can implement this based on your needs
+    return {} // You can implement this based on your needs
   }
 
   const applyFilters = (searchTerm: string, filters: Record<string, any>) => {
-    if (!team?.players) return;
+    if (!team?.players) return
 
-    let filtered = team.players;
+    let filtered = team.players
 
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter((player) => 
         player.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      )
     }
 
     // Apply price filter
     if (filters.price && Array.isArray(filters.price)) {
-      const [minPrice, maxPrice] = filters.price;
+      const [minPrice, maxPrice] = filters.price
       filtered = filtered.filter((player) => {
-        const playerPrice = player.value || 0;
-        return playerPrice >= minPrice && playerPrice <= maxPrice;
-      });
+        const playerPrice = player.value || 0
+        return playerPrice >= minPrice && playerPrice <= maxPrice
+      })
     }
 
     // Apply position filter
     if (filters.position && filters.position !== "") {
-      filtered = filtered.filter((player) => player.position === filters.position);
+      filtered = filtered.filter((player) => player.position === filters.position)
     }
 
-    setFilteredPlayers(filtered);
+    setFilteredPlayers(filtered)
   }
 
   const handleFilter = (filters: Record<string, any>) => {
-    const currentSearchTerm = searchParams.get('playerName') || '';
-    applyFilters(currentSearchTerm, filters);
+    const currentSearchTerm = searchParams.get('playerName') || ''
+    applyFilters(currentSearchTerm, filters)
   }
 
   const handleAddToTransferMarket = async (playerId: string, askingPrice: number) => {
-    setLoadingPlayers(prev => new Set(prev).add(playerId));
-    
-    try {
-      await mutations.addToTransferMarket(playerId, askingPrice);
-      
-      // Update player in store
-      updatePlayer(playerId, {
-        isInTransferMarket: true,
-        askingPrice: askingPrice,
-        transferId: `transfer_${playerId}_${Date.now()}`
-      });
-      
-      console.log(`Player ${playerId} added to transfer market with asking price: $${askingPrice}`);
-    } catch (error) {
-      console.error('Failed to add player to transfer market:', error);
-    } finally {
-      setLoadingPlayers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(playerId);
-        return newSet;
-      });
-    }
-  };
+    addToTransferMarketMutation.mutate({ playerId, askingPrice })
+  }
 
   const handleRemoveFromTransferMarket = async (playerId: string) => {
-    setLoadingPlayers(prev => new Set(prev).add(playerId));
-    
-    try {
-      await mutations.removeFromTransferMarket(playerId);
-      
-      // Update player in store
-      updatePlayer(playerId, {
-        isInTransferMarket: false,
-        askingPrice: undefined,
-        transferId: undefined
-      });
-      
-      console.log(`Player ${playerId} removed from transfer market`);
-    } catch (error) {
-      console.error('Failed to remove player from transfer market:', error);
-    } finally {
-      setLoadingPlayers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(playerId);
-        return newSet;
-      });
+    const player = team?.players.find(p => p.id === playerId)
+    if (!player?.transferId) {
+      toast.error('Transfer ID not found for player')
+      return
     }
-  };
+    
+    removeFromTransferMarketMutation.mutate({ 
+      playerId, 
+      transferId: player.transferId 
+    })
+  }
 
   const handleSellPlayer = async (playerId: string) => {
-    setLoadingPlayers(prev => new Set(prev).add(playerId));
-    
-    try {
-      await mutations.sellPlayer(playerId);
-      console.log(`Player ${playerId} sold`);
-    } catch (error) {
-      console.error('Failed to sell player:', error);
-    } finally {
-      setLoadingPlayers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(playerId);
-        return newSet;
-      });
-    }
-  };
+    sellPlayerMutation.mutate(playerId)
+  }
+
+  const getPlayerLoadingState = (playerId: string) => {
+    return (
+      addToTransferMarketMutation.isPending && 
+      addToTransferMarketMutation.variables?.playerId === playerId
+    ) || (
+      removeFromTransferMarketMutation.isPending && 
+      removeFromTransferMarketMutation.variables?.playerId === playerId
+    ) || (
+      sellPlayerMutation.isPending && 
+      sellPlayerMutation.variables === playerId
+    )
+  }
 
   const ListingTab = (players: Player[], position: "ALL" | "GK" | 'DEF' | 'MID' | 'FWD') => {
     let positionFiltered: Player[] | undefined = position != "ALL" ? players.filter((player) => player.position == position) : players
-    return <>
-      {positionFiltered && positionFiltered.map((player) => (
-        <PlayerCard
-          key={player.id}
-          player={player}
-          variant="owned"
-          onSell={handleSellPlayer}
-          onAddToTransferList={handleAddToTransferMarket}
-          onRemoveFromTransferList={handleRemoveFromTransferMarket}
-          isLoading={loadingPlayers.has(player.id)}
-        />
-      ))}
-    </>
+    return (
+      <>
+        {positionFiltered && positionFiltered.map((player) => (
+          <PlayerCard
+            key={player.id}
+            player={player}
+            variant="owned"
+            onSell={handleSellPlayer}
+            onAddToTransferList={handleAddToTransferMarket}
+            onRemoveFromTransferList={handleRemoveFromTransferMarket}
+            isLoading={getPlayerLoadingState(player.id)}
+          />
+        ))}
+      </>
+    )
   }
 
   if (!team) {
@@ -225,7 +284,7 @@ export function TeamPage() {
           Your team not yet created. We are working on it !
         </Typography>
       </div>
-    );
+    )
   }
 
   return (
