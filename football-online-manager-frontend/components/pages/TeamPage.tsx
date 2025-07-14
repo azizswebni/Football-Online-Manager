@@ -11,11 +11,53 @@ import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { Player } from "@/lib/interfaces"
 import { PlayerCard } from "../molecules/PlayerCard"
 
+// Fake mutations - replace with real API calls later
+const useMutations = () => {
+  const addToTransferMarket = async (playerId: string, askingPrice: number) => {
+    console.log(`Adding player ${playerId} to transfer market with asking price: $${askingPrice}`);
+    // Fake API call
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true });
+      }, 1000);
+    });
+  };
+
+  const removeFromTransferMarket = async (playerId: string) => {
+    console.log(`Removing player ${playerId} from transfer market`);
+    // Fake API call
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true });
+      }, 1000);
+    });
+  };
+
+  const sellPlayer = async (playerId: string) => {
+    console.log(`Selling player ${playerId}`);
+    // Fake API call
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true });
+      }, 1000);
+    });
+  };
+
+  return {
+    addToTransferMarket,
+    removeFromTransferMarket,
+    sellPlayer
+  };
+};
+
 export function TeamPage() {
-  const { team } = useTeamStore()
+  const { team, updatePlayer } = useTeamStore()
   const pathname = usePathname();
   const { replace } = useRouter();
   const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState<Set<string>>(new Set());
+  
+  const mutations = useMutations();
 
   useEffect(() => {
     if (team?.players) {
@@ -89,6 +131,73 @@ export function TeamPage() {
     applyFilters(currentSearchTerm, filters);
   }
 
+  const handleAddToTransferMarket = async (playerId: string, askingPrice: number) => {
+    setLoadingPlayers(prev => new Set(prev).add(playerId));
+    
+    try {
+      await mutations.addToTransferMarket(playerId, askingPrice);
+      
+      // Update player in store
+      updatePlayer(playerId, {
+        isInTransferMarket: true,
+        askingPrice: askingPrice,
+        transferId: `transfer_${playerId}_${Date.now()}`
+      });
+      
+      console.log(`Player ${playerId} added to transfer market with asking price: $${askingPrice}`);
+    } catch (error) {
+      console.error('Failed to add player to transfer market:', error);
+    } finally {
+      setLoadingPlayers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(playerId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleRemoveFromTransferMarket = async (playerId: string) => {
+    setLoadingPlayers(prev => new Set(prev).add(playerId));
+    
+    try {
+      await mutations.removeFromTransferMarket(playerId);
+      
+      // Update player in store
+      updatePlayer(playerId, {
+        isInTransferMarket: false,
+        askingPrice: undefined,
+        transferId: undefined
+      });
+      
+      console.log(`Player ${playerId} removed from transfer market`);
+    } catch (error) {
+      console.error('Failed to remove player from transfer market:', error);
+    } finally {
+      setLoadingPlayers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(playerId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleSellPlayer = async (playerId: string) => {
+    setLoadingPlayers(prev => new Set(prev).add(playerId));
+    
+    try {
+      await mutations.sellPlayer(playerId);
+      console.log(`Player ${playerId} sold`);
+    } catch (error) {
+      console.error('Failed to sell player:', error);
+    } finally {
+      setLoadingPlayers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(playerId);
+        return newSet;
+      });
+    }
+  };
+
   const ListingTab = (players: Player[], position: "ALL" | "GK" | 'DEF' | 'MID' | 'FWD') => {
     let positionFiltered: Player[] | undefined = position != "ALL" ? players.filter((player) => player.position == position) : players
     return <>
@@ -97,8 +206,10 @@ export function TeamPage() {
           key={player.id}
           player={player}
           variant="owned"
-          onSell={(id) => console.log("Sell player:", id)}
-          onAddToTransferList={(id) => console.log("Add to transfer list:", id)}
+          onSell={handleSellPlayer}
+          onAddToTransferList={handleAddToTransferMarket}
+          onRemoveFromTransferList={handleRemoveFromTransferMarket}
+          isLoading={loadingPlayers.has(player.id)}
         />
       ))}
     </>
