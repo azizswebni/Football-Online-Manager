@@ -5,6 +5,9 @@ export interface Player {
     age: number
     overall: number
     value: number
+    isInTransferMarket: boolean;
+    transferId?: string;
+    askingPrice?: number;
 }
 
 
