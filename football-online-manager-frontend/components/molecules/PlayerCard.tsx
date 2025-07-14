@@ -8,17 +8,8 @@ import { StatusBadge } from "@/components/atoms/StatusBadge"
 import { IconButton } from "@/components/atoms/IconButton"
 import { DollarSign, Plus, Minus, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Player } from "@/lib/interfaces"
 
-export interface Player {
-  id: string
-  name: string
-  position: string
-  rating: number
-  value: string
-  team: string
-  isOwned?: boolean
-  askingPrice?: string
-}
 
 interface PlayerCardProps {
   player: Player
@@ -45,12 +36,6 @@ export function PlayerCard({
       .toUpperCase()
   }
 
-  const getRatingColor = (rating: number) => {
-    if (rating >= 85) return "success"
-    if (rating >= 75) return "info"
-    if (rating >= 65) return "warning"
-    return "neutral"
-  }
 
   return (
     <Card
@@ -81,26 +66,22 @@ export function PlayerCard({
                 <StatusBadge status="neutral" size="sm">
                   {player.position}
                 </StatusBadge>
-                <Typography variant="caption" color="secondary">
+                {/* <Typography variant="caption" color="secondary">
                   {player.team}
                 </Typography>
                 <StatusBadge status={getRatingColor(player.rating)} size="sm">
                   <Star className="w-3 h-3 mr-1" />
                   {player.rating}
-                </StatusBadge>
+                </StatusBadge> */}
               </div>
             </div>
           </div>
 
-          {/* Value & Actions */}
           <div className="text-right space-y-2">
             <div>
-              <Typography variant="h3" className="text-slate-900">
-                {player.askingPrice || player.value}
-              </Typography>
-              {player.askingPrice && (
+              {player.value && (
                 <Typography variant="caption" color="secondary">
-                  Market Value: {player.value}
+                  Market Value:  $ {player.value.toLocaleString()}
                 </Typography>
               )}
             </div>
@@ -121,7 +102,7 @@ export function PlayerCard({
                       size="sm"
                       onClick={() => onAddToTransferList(player.id)}
                       aria-label="Add to transfer list"
-                    />
+                      />
                   )}
                   {onSell && (
                     <IconButton

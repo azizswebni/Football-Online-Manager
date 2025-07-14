@@ -1,26 +1,108 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Typography } from "@/components/atoms/Typography"
-import { PlayerCard, type Player } from "@/components/molecules/PlayerCard"
 import { SearchFilter } from "@/components/molecules/SearchFilter"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
 import { Target, Shield, Zap, Trophy } from "lucide-react"
 import { useTeamStore } from "@/store/team.store"
+import { useDebouncedCallback } from 'use-debounce';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
+import { Player } from "@/lib/interfaces"
+import { PlayerCard } from "../molecules/PlayerCard"
 
 export function TeamPage() {
   const { team } = useTeamStore()
-  const [players] = useState<Player[]>([
-    { id: "1", name: "Marcus Silva", position: "ST", rating: 87, value: "$2.1M", team: "Your Team", isOwned: true },
-    { id: "2", name: "David Chen", position: "CM", rating: 84, value: "$1.8M", team: "Your Team", isOwned: true },
-    { id: "3", name: "Alex Rodriguez", position: "CB", rating: 82, value: "$1.5M", team: "Your Team", isOwned: true },
-  ])
+  const pathname = usePathname();
+  const { replace } = useRouter();
+  const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([]);
 
-  const filterOptions = [
-    { key: "position", label: "Position", options: ["GK", "DEF", "MID", "ATT"] },
-    { key: "rating", label: "Rating", options: ["80+", "75-79", "70-74", "Below 70"] },
-  ]
+  useEffect(() => {
+    if (team?.players) {
+      setFilteredPlayers(team.players);
+    }
+  }, [team]);
+
+  const searchParams = useSearchParams();
+
+  const getPriceRange = () => {
+    if (!team?.players || team.players.length === 0) return { min: 0, max: 1000000 }
+    
+    const prices = team.players.map(player => player.value || 0)
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices)
+    }
+  }
+
+  const priceRange = getPriceRange()
+
+  const handleSearch = useDebouncedCallback((term) => {
+    const params = new URLSearchParams(searchParams);
+    if (term) {
+      params.set('playerName', term);
+    } else {
+      params.delete('playerName');
+    }
+    replace(`${pathname}?${params.toString()}`);
+    
+    // Apply search filter
+    applyFilters(term, getCurrentFilters());
+  }, 500);
+
+  const getCurrentFilters = () => {
+    // Get current filters from state or URL params
+    return {}; // You can implement this based on your needs
+  }
+
+  const applyFilters = (searchTerm: string, filters: Record<string, any>) => {
+    if (!team?.players) return;
+
+    let filtered = team.players;
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter((player) => 
+        player.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply price filter
+    if (filters.price && Array.isArray(filters.price)) {
+      const [minPrice, maxPrice] = filters.price;
+      filtered = filtered.filter((player) => {
+        const playerPrice = player.value || 0;
+        return playerPrice >= minPrice && playerPrice <= maxPrice;
+      });
+    }
+
+    // Apply position filter
+    if (filters.position && filters.position !== "") {
+      filtered = filtered.filter((player) => player.position === filters.position);
+    }
+
+    setFilteredPlayers(filtered);
+  }
+
+  const handleFilter = (filters: Record<string, any>) => {
+    const currentSearchTerm = searchParams.get('playerName') || '';
+    applyFilters(currentSearchTerm, filters);
+  }
+
+  const ListingTab = (players: Player[], position: "ALL" | "GK" | 'DEF' | 'MID' | 'FWD') => {
+    let positionFiltered: Player[] | undefined = position != "ALL" ? players.filter((player) => player.position == position) : players
+    return <>
+      {positionFiltered && positionFiltered.map((player) => (
+        <PlayerCard
+          key={player.id}
+          player={player}
+          variant="owned"
+          onSell={(id) => console.log("Sell player:", id)}
+          onAddToTransferList={(id) => console.log("Add to transfer list:", id)}
+        />
+      ))}
+    </>
+  }
 
   if (!team) {
     return (
@@ -34,17 +116,17 @@ export function TeamPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <Typography variant="display" className="text-slate-900">
-            My Squad
+            My Team
           </Typography>
           <Typography variant="body" color="secondary">
-            22 players • $45.2M total value
+            {team.playerCount} players • $ {team.totalValue.toLocaleString()} total value
           </Typography>
         </div>
       </div>
@@ -52,9 +134,25 @@ export function TeamPage() {
       {/* Search and Filter */}
       <SearchFilter
         placeholder="Search your players..."
-        filters={filterOptions}
-        onSearch={(query) => console.log("Search:", query)}
-        onFilter={(filters) => console.log("Filters:", filters)}
+        filters={[
+          {
+            key: "price",
+            label: "Price Range",
+            type: "slider",
+            min: priceRange.min,
+            max: priceRange.max,
+            step: 1000,
+            defaultValue: [priceRange.min, priceRange.max]
+          },
+          {
+            key: "position",
+            label: "Position",
+            type: "select",
+            options: ["GK", "DEF", "MID", "FWD"]
+          }
+        ]}
+        onSearch={handleSearch}
+        onFilter={handleFilter}
       />
 
       {/* Position Tabs */}
@@ -63,57 +161,40 @@ export function TeamPage() {
           <TabsTrigger value="all">All Players</TabsTrigger>
           <TabsTrigger value="gk">
             <Target className="w-4 h-4 mr-1" />
-            GK (3)
+            GK ({filteredPlayers.filter((p) => p.position === "GK").length})
           </TabsTrigger>
           <TabsTrigger value="def">
             <Shield className="w-4 h-4 mr-1" />
-            DEF (6)
+            DEF ({filteredPlayers.filter((p) => p.position === "DEF").length})
           </TabsTrigger>
           <TabsTrigger value="mid">
             <Zap className="w-4 h-4 mr-1" />
-            MID (8)
+            MID ({filteredPlayers.filter((p) => p.position === "MID").length})
           </TabsTrigger>
-          <TabsTrigger value="att">
+          <TabsTrigger value="fwd">
             <Trophy className="w-4 h-4 mr-1" />
-            ATT (5)
+            FWD ({filteredPlayers.filter((p) => p.position === "FWD").length})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
-          {/* Player Cards */}
-          {players.map((player) => (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              variant="owned"
-              onSell={(id) => console.log("Sell player:", id)}
-              onAddToTransferList={(id) => console.log("Add to transfer list:", id)}
-            />
-          ))}
+          {ListingTab(filteredPlayers, "ALL")}
         </TabsContent>
 
         <TabsContent value="gk" className="space-y-4">
-          <Typography variant="body" color="secondary" className="text-center py-8">
-            Goalkeeper players will be displayed here
-          </Typography>
+          {ListingTab(filteredPlayers, "GK")}
         </TabsContent>
 
         <TabsContent value="def" className="space-y-4">
-          <Typography variant="body" color="secondary" className="text-center py-8">
-            Defender players will be displayed here
-          </Typography>
+          {ListingTab(filteredPlayers, "DEF")}
         </TabsContent>
 
         <TabsContent value="mid" className="space-y-4">
-          <Typography variant="body" color="secondary" className="text-center py-8">
-            Midfielder players will be displayed here
-          </Typography>
+          {ListingTab(filteredPlayers, "MID")}
         </TabsContent>
 
-        <TabsContent value="att" className="space-y-4">
-          <Typography variant="body" color="secondary" className="text-center py-8">
-            Attacker players will be displayed here
-          </Typography>
+        <TabsContent value="fwd" className="space-y-4">
+          {ListingTab(filteredPlayers, "FWD")}
         </TabsContent>
       </Tabs>
     </div>

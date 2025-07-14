@@ -80,10 +80,6 @@ export function TransferMarketPage() {
             Discover and acquire new talent
           </Typography>
         </div>
-        <StatusBadge status="success" className="bg-green-50 text-green-700 border-green-200">
-          <DollarSign className="w-4 h-4 mr-1" />
-          Budget: $3,250,000
-        </StatusBadge>
       </div>
 
       {/* Search and Filters */}

@@ -3,20 +3,26 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
 import { Filter, Search, X } from "lucide-react"
 import { useState } from "react"
 
 interface FilterOption {
   key: string
   label: string
-  options: string[]
+  options?: string[] // for select
+  type?: "select" | "slider"
+  min?: number
+  max?: number
+  step?: number
+  defaultValue?: [number, number]
 }
 
 interface SearchFilterProps {
   placeholder?: string
   filters?: FilterOption[]
   onSearch?: (query: string) => void
-  onFilter?: (filters: Record<string, string>) => void
+  onFilter?: (filters: Record<string, any>) => void
   className?: string
 }
 
@@ -28,7 +34,7 @@ export function SearchFilter({
   className,
 }: SearchFilterProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({})
   const [showFilters, setShowFilters] = useState(false)
 
   const handleSearch = (query: string) => {
@@ -36,7 +42,7 @@ export function SearchFilter({
     onSearch?.(query)
   }
 
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = (key: string, value: any) => {
     const newFilters = { ...activeFilters, [key]: value }
     setActiveFilters(newFilters)
     onFilter?.(newFilters)
@@ -47,6 +53,26 @@ export function SearchFilter({
     delete newFilters[key]
     setActiveFilters(newFilters)
     onFilter?.(newFilters)
+  }
+
+  const formatFilterValue = (filter: FilterOption, value: any) => {
+    if (filter.type === "slider" && Array.isArray(value)) {
+      return `$${value[0].toLocaleString()} - $${value[1].toLocaleString()}`
+    }
+    return value
+  }
+
+  const getActiveFilterCount = () => {
+    return Object.keys(activeFilters).filter(key => {
+      const value = activeFilters[key]
+      if (Array.isArray(value)) {
+        const filter = filters.find(f => f.key === key)
+        if (filter && filter.type === "slider") {
+          return value[0] !== filter.min || value[1] !== filter.max
+        }
+      }
+      return value !== "" && value !== undefined && value !== null
+    }).length
   }
 
   return (
@@ -66,28 +92,39 @@ export function SearchFilter({
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
             Filters
-            {Object.keys(activeFilters).length > 0 && (
+            {getActiveFilterCount() > 0 && (
               <span className="bg-green-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
-                {Object.keys(activeFilters).length}
+                {getActiveFilterCount()}
               </span>
             )}
           </Button>
         </div>
 
         {/* Active Filters */}
-        {Object.keys(activeFilters).length > 0 && (
+        {getActiveFilterCount() > 0 && (
           <div className="flex flex-wrap gap-2">
-            {Object.entries(activeFilters).map(([key, value]) => (
-              <div
-                key={key}
-                className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
-              >
-                {key}: {value}
-                <button onClick={() => clearFilter(key)} className="hover:bg-green-200 rounded-full p-0.5">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
+            {Object.entries(activeFilters).map(([key, value]) => {
+              const filter = filters.find(f => f.key === key)
+              if (!filter) return null
+              
+              const shouldShow = filter.type === "slider" 
+                ? Array.isArray(value) && (value[0] !== filter.min || value[1] !== filter.max)
+                : value !== "" && value !== undefined && value !== null
+
+              if (!shouldShow) return null
+
+              return (
+                <div
+                  key={key}
+                  className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
+                >
+                  {filter.label}: {formatFilterValue(filter, value)}
+                  <button onClick={() => clearFilter(key)} className="hover:bg-green-200 rounded-full p-0.5">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -97,18 +134,40 @@ export function SearchFilter({
             {filters.map((filter) => (
               <div key={filter.key}>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{filter.label}</label>
-                <select
-                  value={activeFilters[filter.key] || ""}
-                  onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-md text-sm"
-                >
-                  <option value="">All {filter.label}</option>
-                  {filter.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                
+                {filter.type === "slider" ? (
+                  <div className="space-y-3">
+                    <Slider
+                      value={activeFilters[filter.key] || filter.defaultValue || [filter.min!, filter.max!]}
+                      onValueChange={(value) => handleFilterChange(filter.key, value)}
+                      min={filter.min}
+                      max={filter.max}
+                      step={filter.step || 1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>${filter.min?.toLocaleString()}</span>
+                      <span>${filter.max?.toLocaleString()}</span>
+                    </div>
+                    <div className="text-center text-sm text-slate-600">
+                      ${(activeFilters[filter.key] || filter.defaultValue || [filter.min!, filter.max!])[0].toLocaleString()} - 
+                      ${(activeFilters[filter.key] || filter.defaultValue || [filter.min!, filter.max!])[1].toLocaleString()}
+                    </div>
+                  </div>
+                ) : (
+                  <select
+                    value={activeFilters[filter.key] || ""}
+                    onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-md text-sm"
+                  >
+                    <option value="">All {filter.label}</option>
+                    {filter.options?.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             ))}
           </div>
