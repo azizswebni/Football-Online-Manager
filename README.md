@@ -241,7 +241,7 @@ docker-compose logs      # View logs
 ## 📈 Time Report
 
 ### Day 1: Understanding Requirements and Project Initialization
-- **6 hours** understanding the project requirements, setting up the repository, and initializing the backend project structure.
+- **5 hours** understanding the project requirements, setting up the repository, and initializing the backend project structure.
   - Set up Node.js/TypeScript backend with Express.
   - Initialized Git repository and project documentation.
   - Configured ESLint, Prettier, and initial Docker setup.
@@ -249,14 +249,13 @@ docker-compose logs      # View logs
   - Modularized codebase for scalability (controllers, services, middlewares, etc.).
   - Added error handling, logging, and validation throughout the stack.
 
-
 ### Day 2: Authentication Module Implementation
-- **2 hour** Initializing the frontend project structure (Next.js, TypeScript, Tailwind CSS).
-   - Implemented secure storage for sensitive data on frontend (AES-encrypted cookies).
-- **2 hours** User registration and login (backend & frontend integration).
+- **1.5 hours** Initializing the frontend project structure (Next.js, TypeScript, Tailwind CSS).
+  - Implemented secure storage for sensitive data on frontend (AES-encrypted cookies).
+- **2.5 hours** User registration and login (backend & frontend integration).
   - Created `/api/auth` endpoint for login/registration.
   - Built frontend login form with validation.
-- **5 hours** Implemented secure JWT authentication and cookie handling.
+- **3 hours** Implemented secure JWT authentication and cookie handling.
   - Set up JWT generation, HTTP-only cookies, and secure storage on frontend.
   - Added authentication middleware and protected routes.
   - Set up Swagger UI for API documentation.
@@ -265,10 +264,10 @@ docker-compose logs      # View logs
   - Implemented Next.js middleware for route protection.
 
 ### Day 3: Team & Player Modules Foundation
-- **2 hours** Integrated Bull for background processing (team creation backend).
+- **1.5 hours** Integrated Bull for background processing (team creation backend).
   - Configured Bull and Bull Board for job queues.
   - Created job for automatic team creation on user registration.
-- **3 hours** Integrated Socket.IO for real-time updates (team creation frontend & backend).
+- **2 hours** Integrated Socket.IO for real-time updates (team creation frontend & backend).
   - Set up Socket.IO server and client.
   - Planned for future real-time features (Socket.IO rooms, notifications).
 - **2 hours** Designed and set up TypeORM models/entities for Teams and Players.
@@ -283,22 +282,22 @@ docker-compose logs      # View logs
   - Added player listing, stats, and actions (add/remove from transfer market).
 - **2 hours** Completed My Team filters by position, price, and player name.
   - Implemented search and filter logic on frontend and backend.
-- **1 hour** Designed and implemented user interface for Transfer Market.
+- **1.5 hours** Designed and implemented user interface for Transfer Market.
   - Built TransferMarketPage with player cards and buy actions.
-- **1 hour** Implemented backend endpoints for transfer market.
+- **1.5 hours** Implemented backend endpoints for transfer market.
   - `/api/transfer` for listing and filtering.
   - `/api/transfer/buy` for purchasing players.
 - **1 hour** Added state management and React Query integration for team and transfer data.
 
 ### Day 6: Dashboard and Transfer Market Feature
-- **2 hours** Added a functional dashboard for user insights and navigation.
+- **1.5 hours** Added a functional dashboard for user insights and navigation.
   - Built DashboardPage with team stats, quick actions, and formation preview.
 - **2 hours** Implemented the Transfer Market (purchase/sell players) with backend and frontend integration.
   - Connected buy/sell actions to backend.
   - Added toast notifications for feedback.
 - **1 hour** Added filters and search for the market feature.
   - Enhanced UI/UX for searching and filtering players.
-- **1 hour** Performed overall review and testing of the application.
+- **1.5 hours** Performed overall review and testing of the application.
   - Manual testing of all flows (auth, team, transfer).
   - Bug fixes and UI polish.
   - Updated documentation and screenshots.
