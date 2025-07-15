@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Typography } from "@/components/atoms/Typography"
 import { PlayerCard } from "@/components/molecules/PlayerCard"
 import { SearchFilter } from "@/components/molecules/SearchFilter"
@@ -12,16 +13,29 @@ import {
   getTransferMarketPlayersService, 
   buyPlayerTransferMarketService, 
 } from "@/services/market.service"
+import { getTeamService } from "@/services/team.service"
 import { toast } from "sonner"
 import { TransferMarketFilters, TransferPlayer } from "@/lib/interfaces"
 import { positions } from "@/lib/consts"
 import { AxiosError } from "axios"
 
+// Query keys
+const QUERY_KEYS = {
+  TEAM: ['team'],
+  TRANSFER_MARKET: ['transfer-market'],
+}
+
+interface BuyPlayerMutationData {
+  transferId: string
+  transfer: TransferPlayer
+}
+
 export function TransferMarketPage() {
-  const { team } = useTeamStore()
+  const { team, setTeam } = useTeamStore()
+  const queryClient = useQueryClient()
+  
   const [transfers, setTransfers] = useState<TransferPlayer[]>([])
   const [loading, setLoading] = useState(true)
-  const [buyingPlayerId, setBuyingPlayerId] = useState<string | null>(null)
   const [filters, setFilters] = useState<TransferMarketFilters>({})
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -37,6 +51,61 @@ export function TransferMarketPage() {
       options: ["Under 100K", "100K-500K", "500K-1M", "1M-2M", "2M-5M", "Over 5M"] 
     },
   ]
+
+  // Buy Player Mutation
+  const buyPlayerMutation = useMutation({
+    mutationFn: async ({ transferId }: { transferId: string }) => {
+      await buyPlayerTransferMarketService(transferId)
+      return { transferId }
+    },
+    onMutate: async ({ transferId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.TEAM })
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.TRANSFER_MARKET })
+
+      // Find the transfer being purchased
+      const transfer = transfers.find(t => t.id === transferId)
+      
+      // Optimistically remove the player from transfer market
+      setTransfers(prevTransfers => 
+        prevTransfers.filter(t => t.id !== transferId)
+      )
+
+      // Return context for rollback
+      return { transferId, transfer }
+    },
+    onSuccess: async ({ transferId }) => {
+      const transfer = transfers.find(t => t.id === transferId)
+      if (transfer) {
+        toast.success(`Successfully purchased ${transfer.player.name} for $${transfer.askingPrice.toLocaleString()}!`)
+      } else {
+        toast.success("Player purchased successfully!")
+      }
+      
+      // Refresh team data
+      try {
+        const teamData = await getTeamService()
+        setTeam(teamData)
+      } catch (error) {
+        console.error("Error refreshing team data:", error)
+      }
+      
+      // Refresh transfer market
+      loadTransferMarket(filters)
+    },
+    onError: (error: AxiosError<{ error: string; message: string }>, { transferId }, context) => {
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Failed to purchase player. Please try again.'
+      
+      // Rollback optimistic update
+      if (context?.transfer) {
+        setTransfers(prevTransfers => [...prevTransfers, context.transfer!])
+      }
+      
+      toast.error(errorMessage)
+    }
+  })
 
   const loadTransferMarket = async (appliedFilters?: TransferMarketFilters) => {
     try {
@@ -107,19 +176,20 @@ export function TransferMarketPage() {
   }
 
   const handleBuyPlayer = async (transferId: string) => {
-    try {
-      setBuyingPlayerId(transferId)
-      await buyPlayerTransferMarketService(transferId)
-      toast.success("Player purchased successfully!")
-      
-      // Refresh the transfer market
-      loadTransferMarket(filters)
-    } catch (error) {
-      console.error("Error buying player:", error)
-      toast.error("Failed to buy player")
-    } finally {
-      setBuyingPlayerId(null)
+    // Check if user has enough budget
+    const transfer = transfers.find(t => t.id === transferId)
+    if (transfer && team && team.budget < transfer.askingPrice) {
+      toast.error(`Insufficient budget. You need $${transfer.askingPrice.toLocaleString()} but only have $${team.budget.toLocaleString()}`)
+      return
     }
+
+    // Check if trying to buy own player
+    if (transfer && team && transfer.sellingTeam.name === team.name) {
+      toast.error("You cannot buy your own player")
+      return
+    }
+
+    buyPlayerMutation.mutate({ transferId })
   }
 
   const handleRefresh = () => {
@@ -182,6 +252,12 @@ export function TransferMarketPage() {
           <StatusBadge status="info" size="sm">
             {transfers.length} Players Available
           </StatusBadge>
+          <div className="flex items-center space-x-2 bg-green-50 border border-green-200 rounded-md px-3 py-1">
+            <DollarSign className="w-4 h-4 text-green-600" />
+            <Typography variant="caption" className="text-green-700 font-medium">
+              Budget: {formatPrice(team.budget)}
+            </Typography>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -254,7 +330,9 @@ export function TransferMarketPage() {
 
           {transfers.map((transfer) => {
             const player = convertToPlayer(transfer)
-            const isCurrentlyBuying = buyingPlayerId === transfer.id
+            const isCurrentlyBuying = buyPlayerMutation.isPending && buyPlayerMutation.variables?.transferId === transfer.id
+            const canAfford = team.budget >= transfer.askingPrice
+            const isOwnPlayer = transfer.sellingTeam.name === team.name
             
             return (
               <div key={transfer.id} className="relative">
@@ -266,16 +344,52 @@ export function TransferMarketPage() {
                 />
                 
                 {/* Price Breakdown */}
-                <div className="absolute top-4 right-4 bg-blue-50 border border-blue-200 rounded-md p-2 space-y-1">
-                  <Typography variant="caption" className="text-blue-700 font-medium">
+                <div className={`absolute top-4 right-4 border rounded-md p-2 space-y-1 ${
+                  !canAfford 
+                    ? 'bg-red-50 border-red-200' 
+                    : isOwnPlayer 
+                      ? 'bg-gray-50 border-gray-200'
+                      : 'bg-blue-50 border-blue-200'
+                }`}>
+                  <Typography variant="caption" className={`font-medium ${
+                    !canAfford 
+                      ? 'text-red-700' 
+                      : isOwnPlayer 
+                        ? 'text-gray-700'
+                        : 'text-blue-700'
+                  }`}>
                     Asking Price: {formatPrice(transfer.askingPrice)}
                   </Typography>
-                  <Typography variant="caption" className="text-blue-600">
+                  <Typography variant="caption" className={
+                    !canAfford 
+                      ? 'text-red-600' 
+                      : isOwnPlayer 
+                        ? 'text-gray-600'
+                        : 'text-blue-600'
+                  }>
                     Market Value: {formatPrice(transfer.player.value)}
                   </Typography>
-                  <Typography variant="caption" className="text-blue-500">
+                  <Typography variant="caption" className={
+                    !canAfford 
+                      ? 'text-red-500' 
+                      : isOwnPlayer 
+                        ? 'text-gray-500'
+                        : 'text-blue-500'
+                  }>
                     Listed by: {transfer.sellingTeam.name}
                   </Typography>
+                  
+                  {!canAfford && (
+                    <Typography variant="caption" className="text-red-600 font-medium">
+                      Insufficient Budget
+                    </Typography>
+                  )}
+                  
+                  {isOwnPlayer && (
+                    <Typography variant="caption" className="text-gray-600 font-medium">
+                      Your Player
+                    </Typography>
+                  )}
                 </div>
               </div>
             )
