@@ -19,6 +19,10 @@ const transferController = new TransferController();
  *         name: teamName
  *         schema:
  *           type: string
+  *       - in: query
+ *         name: position
+ *         schema:
+ *           type: string
  *         description: Filter by team name
  *       - in: query
  *         name: playerName

@@ -43,6 +43,12 @@ export class TransferService {
       });
     }
 
+    if(filters.position){
+      queryBuilder.andWhere('LOWER(player.position) LIKE LOWER(:position)',{
+        position:filters.position
+      })
+    }
+
     queryBuilder.orderBy('transfer.createdAt', 'DESC');
 
     const transfers = await queryBuilder.getMany();

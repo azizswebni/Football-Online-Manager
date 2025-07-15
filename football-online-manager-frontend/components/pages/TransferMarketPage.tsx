@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/atoms/StatusBadge"
 import { DollarSign, Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTeamStore } from "@/store/team.store"
+import { useDebouncedCallback } from 'use-debounce'
 import { 
   getTransferMarketPlayersService, 
   buyPlayerTransferMarketService, 
@@ -35,22 +36,23 @@ export function TransferMarketPage() {
   const queryClient = useQueryClient()
   
   const [transfers, setTransfers] = useState<TransferPlayer[]>([])
+  const [allTransfers, setAllTransfers] = useState<TransferPlayer[]>([]) // Store original data
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<TransferMarketFilters>({})
   const [searchQuery, setSearchQuery] = useState("")
 
-  const filterOptions = [
-    { 
-      key: "position", 
-      label: "Position", 
-      options: positions
-    },
-    { 
-      key: "priceRange", 
-      label: "Price Range", 
-      options: ["Under 100K", "100K-500K", "500K-1M", "1M-2M", "2M-5M", "Over 5M"] 
-    },
-  ]
+  // Calculate price range from ALL transfers, not filtered ones
+  const getPriceRange = () => {
+    if (!allTransfers || allTransfers.length === 0) return { min: 0, max: 1000000 }
+    
+    const prices = allTransfers.map(transfer => transfer.askingPrice || 0)
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices)
+    }
+  }
+
+  const priceRange = getPriceRange()
 
   // Buy Player Mutation
   const buyPlayerMutation = useMutation({
@@ -66,16 +68,19 @@ export function TransferMarketPage() {
       // Find the transfer being purchased
       const transfer = transfers.find(t => t.id === transferId)
       
-      // Optimistically remove the player from transfer market
+      // Optimistically remove the player from both transfer lists
       setTransfers(prevTransfers => 
         prevTransfers.filter(t => t.id !== transferId)
+      )
+      setAllTransfers(prevAllTransfers => 
+        prevAllTransfers.filter(t => t.id !== transferId)
       )
 
       // Return context for rollback
       return { transferId, transfer }
     },
     onSuccess: async ({ transferId }) => {
-      const transfer = transfers.find(t => t.id === transferId)
+      const transfer = allTransfers.find(t => t.id === transferId)
       if (transfer) {
         toast.success(`Successfully purchased ${transfer.player.name} for $${transfer.askingPrice.toLocaleString()}!`)
       } else {
@@ -101,6 +106,7 @@ export function TransferMarketPage() {
       // Rollback optimistic update
       if (context?.transfer) {
         setTransfers(prevTransfers => [...prevTransfers, context.transfer!])
+        setAllTransfers(prevAllTransfers => [...prevAllTransfers, context.transfer!])
       }
       
       toast.error(errorMessage)
@@ -112,6 +118,11 @@ export function TransferMarketPage() {
       setLoading(true)
       const response = await getTransferMarketPlayersService(appliedFilters)
       setTransfers(response.transfers)
+      
+      // Only update allTransfers if no filters are applied (initial load or refresh)
+      if (!appliedFilters || Object.keys(appliedFilters).length === 0) {
+        setAllTransfers(response.transfers)
+      }
     } catch (error) {
       console.error("Error loading transfer market:", error)
       toast.error("Failed to load transfer market")
@@ -124,7 +135,8 @@ export function TransferMarketPage() {
     loadTransferMarket()
   }, [])
 
-  const handleSearch = (query: string) => {
+  // Debounced search handler
+  const handleSearch = useDebouncedCallback((query: string) => {
     setSearchQuery(query)
     const newFilters = {
       ...filters,
@@ -132,45 +144,35 @@ export function TransferMarketPage() {
     }
     setFilters(newFilters)
     loadTransferMarket(newFilters)
-  }
+  }, 1000)
 
   const handleFilter = (filterData: any) => {
-    const newFilters: TransferMarketFilters = { ...filters }
+    const newFilters: TransferMarketFilters = {}
+    
+    // Handle search query if it exists
+    if (searchQuery) {
+      newFilters.playerName = searchQuery
+    }
     
     // Handle position filter
-    if (filterData.position) {
+    if (filterData.position && filterData.position !== "") {
       newFilters.position = filterData.position
-    } else {
-      delete newFilters.position
     }
 
-    // Handle price range filter
-    if (filterData.priceRange) {
-      const priceRange = filterData.priceRange
-      if (priceRange === "Under 100K") {
-        newFilters.maxPrice = 100000
-        delete newFilters.minPrice
-      } else if (priceRange === "100K-500K") {
-        newFilters.minPrice = 100000
-        newFilters.maxPrice = 500000
-      } else if (priceRange === "500K-1M") {
-        newFilters.minPrice = 500000
-        newFilters.maxPrice = 1000000
-      } else if (priceRange === "1M-2M") {
-        newFilters.minPrice = 1000000
-        newFilters.maxPrice = 2000000
-      } else if (priceRange === "2M-5M") {
-        newFilters.minPrice = 2000000
-        newFilters.maxPrice = 5000000
-      } else if (priceRange === "Over 5M") {
-        newFilters.minPrice = 5000000
-        delete newFilters.maxPrice
+    // Handle price range filter (slider)
+    if (filterData.priceRange && Array.isArray(filterData.priceRange)) {
+      const [minPrice, maxPrice] = filterData.priceRange
+      // Only add price filters if they're different from the default range
+      if (minPrice !== priceRange.min || maxPrice !== priceRange.max) {
+        newFilters.minPrice = minPrice
+        newFilters.maxPrice = maxPrice
       }
-    } else {
-      delete newFilters.minPrice
-      delete newFilters.maxPrice
     }
 
+    // Handle team name filter
+    if (filterData.teamName && filterData.teamName !== "") {
+      newFilters.teamName = filterData.teamName
+    }
     setFilters(newFilters)
     loadTransferMarket(newFilters)
   }
@@ -193,7 +195,15 @@ export function TransferMarketPage() {
   }
 
   const handleRefresh = () => {
-    loadTransferMarket(filters)
+    setFilters({})
+    setSearchQuery("")
+    loadTransferMarket()
+  }
+
+  // Get unique team names from ALL transfers, not filtered ones
+  const getUniqueTeamNames = () => {
+    const teamNames = allTransfers.map(transfer => transfer.sellingTeam.name)
+    return [...new Set(teamNames)].sort()
   }
 
   // Convert TransferPlayer to Player format for PlayerCard
@@ -221,6 +231,66 @@ export function TransferMarketPage() {
     } else {
       return `$${price}`
     }
+  }
+
+  const clearAllFilters = () => {
+    setSearchQuery("")
+    setFilters({})
+    loadTransferMarket()
+  }
+
+  // Create proper filter configuration for SearchFilter component
+  const getFilterConfig = () => {
+    const filterConfig = [
+      {
+        key: "priceRange",
+        label: "Price Range",
+        type: "slider" as const,
+        min: priceRange.min,
+        max: priceRange.max,
+        step: Math.max(1000, Math.floor((priceRange.max - priceRange.min) / 100)),
+        defaultValue: [priceRange.min, priceRange.max] as [number, number]
+      },
+      {
+        key: "position",
+        label: "Position",
+        type: "select" as const,
+        options: positions
+      },
+      {
+        key: "teamName",
+        label: "Team",
+        type: "combobox" as const,
+        options: getUniqueTeamNames()
+      }
+    ]
+    
+    return filterConfig
+  }
+
+  // Transform filters for SearchFilter component
+  const getActiveFiltersForSearchFilter = () => {
+    const activeFilters: Record<string, any> = {}
+    
+    // Add position filter
+    if (filters.position) {
+      activeFilters.position = filters.position
+    }
+    
+    // Add team name filter
+    if (filters.teamName) {
+      activeFilters.teamName = filters.teamName
+    }
+    
+    // Add price range filter
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+      activeFilters.priceRange = [
+        filters.minPrice || priceRange.min,
+        filters.maxPrice || priceRange.max
+      ]
+    }
+    
+    return activeFilters
   }
 
   if (!team) {
@@ -272,8 +342,8 @@ export function TransferMarketPage() {
 
       {/* Search and Filters */}
       <SearchFilter
-        placeholder="Search players, teams, or positions..."
-        filters={filterOptions}
+        placeholder="Search players..."
+        filters={getFilterConfig()}
         onSearch={handleSearch}
         onFilter={handleFilter}
       />
@@ -304,11 +374,7 @@ export function TransferMarketPage() {
           {(searchQuery || Object.keys(filters).length > 0) && (
             <Button
               variant="outline"
-              onClick={() => {
-                setSearchQuery("")
-                setFilters({})
-                loadTransferMarket()
-              }}
+              onClick={clearAllFilters}
             >
               Clear Filters
             </Button>

@@ -9,6 +9,8 @@ import { IsNumber, IsOptional, IsString, Min, Max } from 'class-validator';
  *       properties:
  *         teamName:
  *           type: string
+ *         position:
+ *           type: string
  *         playerName:
  *           type: string
  *         minPrice:
@@ -38,6 +40,10 @@ export class TransferFilterDto {
   @IsOptional()
   @IsString()
   teamName?: string;
+
+  @IsOptional()
+  @IsString()
+  position?: string;
 
   @IsOptional()
   @IsString()
