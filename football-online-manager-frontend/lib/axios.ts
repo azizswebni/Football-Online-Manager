@@ -7,7 +7,7 @@ import cookiesStorage from "./cookieStorage";
 import clearStorages from "./clearStorages";
 import { toast } from "sonner";
 
-const baseURL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
+const baseURL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || 'http://localhost:4000/api';
 
 const Axios = axios.create({
   baseURL: baseURL,
