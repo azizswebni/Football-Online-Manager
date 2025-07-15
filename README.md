@@ -303,6 +303,11 @@ docker-compose logs      # View logs
   - Updated documentation and screenshots.
 
 
+## 💡 Future Improvements
+- ✅ Add pagination and infinite scroll for player and transfer market listings
+- 🔄 Integrate WebSocket for real-time transfer market updates
+- 🧪 Add unit and integration tests (Jest + React Testing Library)
+
 
 # Feedback
 
