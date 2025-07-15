@@ -17,7 +17,7 @@ Football Online Manager built with Next.js And Express.js.
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/azizswebni/Football-Online-Manager
    cd Football-Online-Manager
    ```
 
