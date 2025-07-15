@@ -277,7 +277,7 @@ docker-compose logs      # View logs
   - Built TeamPage and PlayerCard components.
   - Set up state management for team data.
 
-### Days 4 & 5: Completing Team & Player Modules
+### Days 4: Completing Team & Player Modules
 - **2 hours** Designed and implemented user interface for managing team.
   - Added player listing, stats, and actions (add/remove from transfer market).
 - **2 hours** Completed My Team filters by position, price, and player name.
@@ -289,7 +289,7 @@ docker-compose logs      # View logs
   - `/api/transfer/buy` for purchasing players.
 - **1 hour** Added state management and React Query integration for team and transfer data.
 
-### Day 6: Dashboard and Transfer Market Feature
+### Day 5: Dashboard and Transfer Market Feature
 - **1.5 hours** Added a functional dashboard for user insights and navigation.
   - Built DashboardPage with team stats, quick actions, and formation preview.
 - **2 hours** Implemented the Transfer Market (purchase/sell players) with backend and frontend integration.
