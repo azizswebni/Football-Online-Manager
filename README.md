@@ -215,6 +215,29 @@ docker-compose logs      # View logs
 - **Redis 7** - Caching and job queues
 - **Backend API** - Express.js application
 
+
+
+## 📷 Project Images & Screenshots
+
+### 1. ERD Diagram (Database)
+![ERD Diagram](./docs/erd-diagram.png)
+
+### 2. Bull Dashboard (Queue Monitoring)
+![Bull Dashboard](./docs/bull-dashboard.png)
+
+### 3. Swagger UI Documentation
+![Swagger UI](./docs/swagger-ui.png)
+
+### 4. App Screenshots
+#### Home / Auth Page
+![App Screenshot 1](./docs/app-screenshot-1.png)
+
+#### Dashboard
+![App Screenshot 2](./docs/app-screenshot-2.png)
+
+#### Transfer Market
+![App Screenshot 3](./docs/app-screenshot-3.png)
+
 ## 📈 Time Report
 
 ### Day 1: Understanding Requirements and Project Initialization
