@@ -39,9 +39,6 @@ export default function Layout({
       isRetrievingTeamRef.current = true;
       const teamData = await getTeamService();
       setTeam(teamData);
-    } catch (error) {
-      console.error('Failed to retrieve team:', error);
-      toast.error('Failed to load team data');
     } finally {
       isRetrievingTeamRef.current = false;
     }
@@ -52,6 +49,7 @@ export default function Layout({
     if (!id) return;
 
     const initializeTeam = async () => {
+      await retrieveTeam();
       // If team doesn't exist, set up socket connection
       if (!team && !hasTeam) {
         // Clean up existing socket if any
@@ -117,9 +115,6 @@ export default function Layout({
           // Fallback to retrieving team without socket
           await retrieveTeam();
         }
-      } else {
-        // If team exists, just retrieve latest data
-        await retrieveTeam();
       }
     };
 
