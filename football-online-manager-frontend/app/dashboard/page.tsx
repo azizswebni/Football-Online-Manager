@@ -3,10 +3,8 @@
 import { useState } from "react"
 import { AppHeader } from "@/components/AppHeader"
 import { AppNavigation } from "@/components/AppNavigation"
-import { DashboardPage as DashboardPageComponent } from "@/components/pages/DashboardPage"
 import { TeamPage } from "@/components/pages/TeamPage"
 import { TransferMarketPage } from "@/components/pages/TransferMarketPage"
-import { ProfilePage } from "@/components/pages/ProfilePage"
 import { useUserStore } from "@/store/user.store"
 import { useTeamStore } from "@/store/team.store"
 
