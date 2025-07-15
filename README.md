@@ -302,6 +302,32 @@ docker-compose logs      # View logs
   - Bug fixes and UI polish.
   - Updated documentation and screenshots.
 
+
+
+# Feedback
+
+Your insights and suggestions are valuable for continuous improvement. Please feel free to share any thoughts or questions regarding the codebase, design decisions, or potential enhancements.
+
+# Development Notes
+
+## Architecture Decisions
+
+**Team Ownership Model**: After reviewing the requirements, I implemented a single-team-per-user model since multiple team ownership wasn't explicitly mentioned. This simplified the data relationships and user experience.
+
+**Background Processing**: Given the requirement for delayed team creation, I integrated Bull for background job processing with Bull Dashboard for queue monitoring. Socket.io was implemented to provide real-time updates when background jobs complete.
+
+**Database ORM**: This project marks my first experience with TypeORM, which presented both learning opportunities and challenges in exploring this ORM's capabilities.
+
+## Development Timeline
+
+The development timeline provided offers a general overview of completed tasks. Actual time investment varied based on the dynamic nature of development work, with emphasis on delivering optimal outcomes rather than strict schedule adherence. Quality, maintainability, and user experience were prioritized, sometimes requiring additional research, testing, and refinement time.
+
+## Discussion
+
+I'm available for a call to discuss my development approach and provide detailed explanations of the implementation decisions made throughout this project.
+
+Your feedback and suggestions for improvement are always welcome!
+
 ---
 
 ## 👨‍💻 Author
