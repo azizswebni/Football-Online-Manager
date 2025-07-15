@@ -17,6 +17,8 @@ import {
   removePlayerFromTransferMarketService 
 } from "@/services/market.service"
 import { getTeamService } from "@/services/team.service"
+import { positions } from "@/lib/consts"
+import { AxiosError } from "axios"
 
 // Query keys for React Query
 const QUERY_KEYS = {
@@ -62,17 +64,15 @@ export function TeamPage() {
       const teamData = await getTeamService();
       setTeam(teamData);
     },
-    onError: (error, { playerId }) => {
-      console.error('Failed to add player to transfer market:', error)
-      
+    onError: (error: AxiosError<{ message: string }>, { playerId }) => {
+      const message = error.response?.data.message ?? 'Failed to add player to transfer market. Please try again.';
       // Rollback optimistic update
       updatePlayer(playerId, {
         isInTransferMarket: false,
         askingPrice: undefined,
         transferId: undefined
       })
-      
-      toast.error('Failed to add player to transfer market. Please try again.')
+      toast.error(message)
     }
   })
 
@@ -318,7 +318,7 @@ export function TeamPage() {
             key: "position",
             label: "Position",
             type: "select",
-            options: ["GK", "DEF", "MID", "FWD"]
+            options: positions
           }
         ]}
         onSearch={handleSearch}

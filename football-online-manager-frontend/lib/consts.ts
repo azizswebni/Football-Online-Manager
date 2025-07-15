@@ -1,0 +1,1 @@
+export const positions = ["GK", "DEF", "MID", "FWD"]

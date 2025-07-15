@@ -87,11 +87,20 @@ export class TransferService {
     }
 
     // Check team size constraints (15-25 players)
-    const teamPlayerCount = await this.playerRepository.count({
-      where: { team: { id: teamId } }
+    const team = await this.teamRepository.findOne({
+      where:  { id: teamId } ,
+      relations: ['players', 'players.transfers']
+    });
+    if(!team){
+      throw new Error('Team not found')
+    }
+
+    const availablePlayers = team.players.filter(p => {
+      const hasActiveTransfer = p.transfers.some(transfer => transfer.status === 'ACTIVE');
+      return !hasActiveTransfer;
     });
 
-    if (teamPlayerCount <= 15) {
+    if (availablePlayers.length <= 15) {
       throw new Error('Cannot sell player: team must have at least 15 players');
     }
 

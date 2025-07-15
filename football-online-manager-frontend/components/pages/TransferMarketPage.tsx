@@ -1,58 +1,156 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Typography } from "@/components/atoms/Typography"
-import { PlayerCard, type Player } from "@/components/molecules/PlayerCard"
+import { PlayerCard } from "@/components/molecules/PlayerCard"
 import { SearchFilter } from "@/components/molecules/SearchFilter"
 import { StatusBadge } from "@/components/atoms/StatusBadge"
-import { DollarSign } from "lucide-react"
+import { DollarSign, Loader2, AlertCircle, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { useTeamStore } from "@/store/team.store"
+import { 
+  getTransferMarketPlayersService, 
+  buyPlayerTransferMarketService, 
+} from "@/services/market.service"
+import { toast } from "sonner"
+import { TransferMarketFilters, TransferPlayer } from "@/lib/interfaces"
+import { positions } from "@/lib/consts"
+import { AxiosError } from "axios"
 
 export function TransferMarketPage() {
   const { team } = useTeamStore()
-
-  const [marketPlayers] = useState<Player[]>([
-    {
-      id: "1",
-      name: "Roberto Martinez",
-      position: "LW",
-      rating: 89,
-      value: "$2.8M",
-      askingPrice: "$2.95M",
-      team: "FC Barcelona",
-      isOwned: false,
-    },
-    {
-      id: "2",
-      name: "James Wilson",
-      position: "CDM",
-      rating: 85,
-      value: "$1.9M",
-      askingPrice: "$2.0M",
-      team: "Manchester City",
-      isOwned: false,
-    },
-    {
-      id: "3",
-      name: "Luis Garcia",
-      position: "GK",
-      rating: 83,
-      value: "$1.2M",
-      askingPrice: "$1.3M",
-      team: "Real Madrid",
-      isOwned: false,
-    },
-  ])
+  const [transfers, setTransfers] = useState<TransferPlayer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [buyingPlayerId, setBuyingPlayerId] = useState<string | null>(null)
+  const [filters, setFilters] = useState<TransferMarketFilters>({})
+  const [searchQuery, setSearchQuery] = useState("")
 
   const filterOptions = [
-    { key: "position", label: "Position", options: ["GK", "DEF", "MID", "ATT"] },
-    { key: "team", label: "Team", options: ["FC Barcelona", "Manchester City", "Real Madrid"] },
-    { key: "price", label: "Price Range", options: ["Under $1M", "$1M-$2M", "$2M-$3M", "Over $3M"] },
+    { 
+      key: "position", 
+      label: "Position", 
+      options: positions
+    },
+    { 
+      key: "priceRange", 
+      label: "Price Range", 
+      options: ["Under 100K", "100K-500K", "500K-1M", "1M-2M", "2M-5M", "Over 5M"] 
+    },
   ]
 
-  const calculateBuyPrice = (askingPrice: string) => {
-    const price = Number.parseFloat(askingPrice.replace("$", "").replace("M", ""))
-    return (price * 0.95).toFixed(2)
+  const loadTransferMarket = async (appliedFilters?: TransferMarketFilters) => {
+    try {
+      setLoading(true)
+      const response = await getTransferMarketPlayersService(appliedFilters)
+      setTransfers(response.transfers)
+    } catch (error) {
+      console.error("Error loading transfer market:", error)
+      toast.error("Failed to load transfer market")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTransferMarket()
+  }, [])
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    const newFilters = {
+      ...filters,
+      playerName: query || undefined,
+    }
+    setFilters(newFilters)
+    loadTransferMarket(newFilters)
+  }
+
+  const handleFilter = (filterData: any) => {
+    const newFilters: TransferMarketFilters = { ...filters }
+    
+    // Handle position filter
+    if (filterData.position) {
+      newFilters.position = filterData.position
+    } else {
+      delete newFilters.position
+    }
+
+    // Handle price range filter
+    if (filterData.priceRange) {
+      const priceRange = filterData.priceRange
+      if (priceRange === "Under 100K") {
+        newFilters.maxPrice = 100000
+        delete newFilters.minPrice
+      } else if (priceRange === "100K-500K") {
+        newFilters.minPrice = 100000
+        newFilters.maxPrice = 500000
+      } else if (priceRange === "500K-1M") {
+        newFilters.minPrice = 500000
+        newFilters.maxPrice = 1000000
+      } else if (priceRange === "1M-2M") {
+        newFilters.minPrice = 1000000
+        newFilters.maxPrice = 2000000
+      } else if (priceRange === "2M-5M") {
+        newFilters.minPrice = 2000000
+        newFilters.maxPrice = 5000000
+      } else if (priceRange === "Over 5M") {
+        newFilters.minPrice = 5000000
+        delete newFilters.maxPrice
+      }
+    } else {
+      delete newFilters.minPrice
+      delete newFilters.maxPrice
+    }
+
+    setFilters(newFilters)
+    loadTransferMarket(newFilters)
+  }
+
+  const handleBuyPlayer = async (transferId: string) => {
+    try {
+      setBuyingPlayerId(transferId)
+      await buyPlayerTransferMarketService(transferId)
+      toast.success("Player purchased successfully!")
+      
+      // Refresh the transfer market
+      loadTransferMarket(filters)
+    } catch (error) {
+      console.error("Error buying player:", error)
+      toast.error("Failed to buy player")
+    } finally {
+      setBuyingPlayerId(null)
+    }
+  }
+
+  const handleRefresh = () => {
+    loadTransferMarket(filters)
+  }
+
+  // Convert TransferPlayer to Player format for PlayerCard
+  const convertToPlayer = (transfer: TransferPlayer) => ({
+    id: transfer.id, // Using transfer ID as the main ID
+    playerId: transfer.player.id, // Store actual player ID separately
+    name: transfer.player.name,
+    position: transfer.player.position,
+    age: transfer.player.age,
+    overall: transfer.player.overall,
+    value: transfer.player.value,
+    askingPrice: transfer.askingPrice,
+    team: transfer.sellingTeam.name,
+    isOwned: false,
+    isInTransferMarket: true,
+    transferId: transfer.id,
+    createdAt: transfer.createdAt,
+  })
+
+  const formatPrice = (price: number) => {
+    if (price >= 1000000) {
+      return `$${(price / 1000000).toFixed(1)}M`
+    } else if (price >= 1000) {
+      return `$${(price / 1000).toFixed(0)}K`
+    } else {
+      return `$${price}`
+    }
   }
 
   if (!team) {
@@ -80,35 +178,110 @@ export function TransferMarketPage() {
             Discover and acquire new talent
           </Typography>
         </div>
+        <div className="flex items-center space-x-2">
+          <StatusBadge status="info" size="sm">
+            {transfers.length} Players Available
+          </StatusBadge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
       <SearchFilter
         placeholder="Search players, teams, or positions..."
         filters={filterOptions}
-        onSearch={(query) => console.log("Search:", query)}
-        onFilter={(filters) => console.log("Filters:", filters)}
+        onSearch={handleSearch}
+        onFilter={handleFilter}
       />
 
-      {/* Available Players */}
-      <div className="space-y-4">
-        <Typography variant="h3" className="text-slate-900">
-          Available Players
-        </Typography>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <Typography variant="body" className="ml-2 text-slate-600">
+            Loading transfer market...
+          </Typography>
+        </div>
+      )}
 
-        {marketPlayers.map((player) => (
-          <div key={player.id} className="relative">
-            <PlayerCard player={player} variant="market" onBuy={(id) => console.log("Buy player:", id)} />
-            {player.askingPrice && (
-              <div className="absolute top-4 right-4 bg-blue-50 border border-blue-200 rounded-md p-2">
-                <Typography variant="caption" className="text-blue-700">
-                  You pay: ${calculateBuyPrice(player.askingPrice)}M (95%)
-                </Typography>
-              </div>
-            )}
+      {/* Error State */}
+      {!loading && transfers.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <AlertCircle className="w-12 h-12 text-slate-400" />
+          <Typography variant="h3" className="text-slate-600">
+            No Players Available
+          </Typography>
+          <Typography variant="body" color="secondary">
+            {searchQuery || Object.keys(filters).length > 0 
+              ? "No players match your search criteria. Try adjusting your filters."
+              : "The transfer market is currently empty. Check back later for new listings."
+            }
+          </Typography>
+          {(searchQuery || Object.keys(filters).length > 0) && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchQuery("")
+                setFilters({})
+                loadTransferMarket()
+              }}
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Available Players */}
+      {!loading && transfers.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Typography variant="h3" className="text-slate-900">
+              Available Players
+            </Typography>
+            <Typography variant="body" color="secondary">
+              {transfers.length} player{transfers.length !== 1 ? 's' : ''} found
+            </Typography>
           </div>
-        ))}
-      </div>
+
+          {transfers.map((transfer) => {
+            const player = convertToPlayer(transfer)
+            const isCurrentlyBuying = buyingPlayerId === transfer.id
+            
+            return (
+              <div key={transfer.id} className="relative">
+                <PlayerCard 
+                  player={player}
+                  variant="market" 
+                  onBuy={() => handleBuyPlayer(transfer.id)}
+                  isLoading={isCurrentlyBuying}
+                />
+                
+                {/* Price Breakdown */}
+                <div className="absolute top-4 right-4 bg-blue-50 border border-blue-200 rounded-md p-2 space-y-1">
+                  <Typography variant="caption" className="text-blue-700 font-medium">
+                    Asking Price: {formatPrice(transfer.askingPrice)}
+                  </Typography>
+                  <Typography variant="caption" className="text-blue-600">
+                    Market Value: {formatPrice(transfer.player.value)}
+                  </Typography>
+                  <Typography variant="caption" className="text-blue-500">
+                    Listed by: {transfer.sellingTeam.name}
+                  </Typography>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
