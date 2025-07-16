@@ -19,7 +19,7 @@ export class TransferController {
     } catch (error) {
       logger.error('Failed to get transfer list:', error);
       res.status(500).json({
-        message: 'Failed to get transfer list',
+        message: error instanceof Error ? error.message : 'Failed to get transfer list',
         status: 500,
         timestamp: new Date().toISOString()
       });
@@ -31,6 +31,10 @@ export class TransferController {
       const userId = getUserIdFromRequest(req);
       const transferData: CreateTransferDto = req.body;
       
+      if (!userId) {
+        throw new Error("User Not found in request");
+      }
+
       // Get user's team ID (you'll need to implement this)
       const teamId = await this.getUserTeamId(userId);
       
@@ -54,7 +58,9 @@ export class TransferController {
     try {
       const userId = getUserIdFromRequest(req);
       const { transferId } = req.params;
-      
+      if (!userId) {
+        throw new Error("User Not found in request");
+      }
       const teamId = await this.getUserTeamId(userId);
       
       await this.transferService.removePlayerFromTransferList(teamId, transferId);
@@ -77,6 +83,10 @@ export class TransferController {
       const userId = getUserIdFromRequest(req);
       const buyData: BuyPlayerDto = req.body;
       
+      if (!userId) {
+        throw new Error("User Not found in request");
+      }
+
       const teamId = await this.getUserTeamId(userId);
       
       const transfer = await this.transferService.buyPlayer(teamId, buyData);
@@ -98,6 +108,10 @@ export class TransferController {
   async getTeamTransfers(req: Request, res: Response): Promise<void> {
     try {
       const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        throw new Error("User Not found in request");
+      }
+
       const teamId = await this.getUserTeamId(userId);
       
       const transfers = await this.transferService.getTeamTransfers(teamId);
@@ -109,7 +123,7 @@ export class TransferController {
     } catch (error) {
       logger.error('Failed to get team transfers:', error);
       res.status(500).json({
-        message: 'Failed to get team transfers',
+        message: error instanceof Error ? error.message : 'Failed to get team transfers',
         status: 500,
         timestamp: new Date().toISOString()
       });

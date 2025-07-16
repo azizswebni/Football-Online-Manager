@@ -56,4 +56,4 @@ export class AuthResponseDto {
     role: string;
   };
   message!: string;
-} 
+}

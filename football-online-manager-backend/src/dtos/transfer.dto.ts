@@ -72,4 +72,4 @@ export class CreateTransferDto {
 export class BuyPlayerDto {
   @IsString()
   transferId!: string;
-} 
+}

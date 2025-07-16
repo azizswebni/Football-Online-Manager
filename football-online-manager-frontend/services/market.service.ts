@@ -1,5 +1,8 @@
 import Axios from "@/lib/axios";
-import { TransferMarketFilters, TransferMarketResponse } from "@/lib/interfaces";
+import {
+  TransferMarketFilters,
+  TransferMarketResponse,
+} from "@/lib/interfaces";
 
 // Add player to transfer market
 export const addPlayerToTransferMarketService = async ({
@@ -28,14 +31,14 @@ export const getTransferMarketPlayersService = async (
   filters?: TransferMarketFilters
 ): Promise<TransferMarketResponse> => {
   const params = new URLSearchParams();
-  
-  if (filters?.teamName) params.append('teamName', filters.teamName);
-  if (filters?.playerName) params.append('playerName', filters.playerName);
-  if (filters?.minPrice) params.append('minPrice', filters.minPrice.toString());
-  if (filters?.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
-  if (filters?.position) params.append('position', filters.position);
-  
-  const url = `/transfer${params.toString() ? `?${params.toString()}` : ''}`;
+
+  if (filters?.teamName) params.append("teamName", filters.teamName);
+  if (filters?.playerName) params.append("playerName", filters.playerName);
+  if (filters?.minPrice) params.append("minPrice", filters.minPrice.toString());
+  if (filters?.maxPrice) params.append("maxPrice", filters.maxPrice.toString());
+  if (filters?.position) params.append("position", filters.position);
+
+  const url = `/transfer${params.toString() ? `?${params.toString()}` : ""}`;
   const response = await Axios.get<TransferMarketResponse>(url);
   return response.data;
 };
@@ -45,7 +48,7 @@ export const buyPlayerTransferMarketService = async (
   transferId: string
 ): Promise<void> => {
   const response = await Axios.post(`/transfer/buy`, {
-    transferId
+    transferId,
   });
   return response.data;
 };

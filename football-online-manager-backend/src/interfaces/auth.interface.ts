@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import { Request } from "express";
 
 export interface JwtPayload {
   userId: string;
@@ -24,4 +24,4 @@ export interface TokenPayload {
   userId: string;
   email: string;
   role: string;
-} 
+}

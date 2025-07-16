@@ -1,41 +1,51 @@
-import bcrypt from 'bcrypt';
-import { AppDataSource } from '../config/data-source';
-import { User } from '../models/User';
-import { Team } from '../models/Team';
-import { Player } from '../models/Player';
-import { generateToken } from '../utils/jwt';
-import { ENV } from '../config/env';
-import logger from '../config/logger';
-import { AuthDto, AuthResponseDto } from '../dtos/auth.dto';
-import { TeamCreationData, JwtPayload } from '../interfaces/auth.interface';
-import { teamCreationQueue } from '../config/queue';
+import bcrypt from "bcrypt";
+import { AppDataSource } from "../config/data-source";
+import { User } from "../models/User";
+import { Team } from "../models/Team";
+import { Player } from "../models/Player";
+import { generateToken } from "../utils/jwt";
+import { ENV } from "../config/env";
+import logger from "../config/logger";
+import { AuthDto, AuthResponseDto } from "../dtos/auth.dto";
+import { TeamCreationData, JwtPayload } from "../interfaces/auth.interface";
+import { teamCreationQueue } from "../config/queue";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
   private teamRepository = AppDataSource.getRepository(Team);
   private playerRepository = AppDataSource.getRepository(Player);
 
-  async authenticateUser(authData: AuthDto): Promise<{ user: AuthResponseDto['user']; message: string; token: string,code:number }> {
+  async authenticateUser(
+    authData: AuthDto
+  ): Promise<{
+    user: AuthResponseDto["user"];
+    message: string;
+    token: string;
+    code: number;
+  }> {
     const { email, password } = authData;
 
     // Check if user exists
     const existingUser = await this.userRepository.findOne({
       where: { email },
-      relations: ['team']
+      relations: ["team"],
     });
 
     if (existingUser) {
       // Login flow
-      const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        existingUser.password
+      );
       if (!isPasswordValid) {
-        throw new Error('Invalid credentials');
+        throw new Error("Invalid credentials");
       }
 
       // Create JWT payload with user ID
       const jwtPayload: JwtPayload = {
         userId: existingUser.id,
         email: existingUser.email,
-        role: existingUser.role
+        role: existingUser.role,
       };
 
       const token = generateToken(jwtPayload);
@@ -46,39 +56,44 @@ export class AuthService {
         user: {
           id: existingUser.id,
           email: existingUser.email,
-          role: existingUser.role
+          role: existingUser.role,
         },
-        message: 'Login successful',
+        message: "Login successful",
         token,
-        code:200
+        code: 200,
       };
     } else {
       // Registration flow
       const hashedPassword = await bcrypt.hash(password, ENV.BCRYPT_ROUNDS);
-      
+
       const newUser = this.userRepository.create({
         email,
-        password: hashedPassword
+        password: hashedPassword,
       });
 
       const savedUser = await this.userRepository.save(newUser);
 
       // Add team creation job to queue
-      await teamCreationQueue.add({
-        userId: savedUser.id,
-        userEmail: savedUser.email
-      }, {
-        delay: 10000, // 10 second delay
-        jobId: `team-creation-${savedUser.id}` // Prevent duplicate jobs
-      });
+      await teamCreationQueue.add(
+        {
+          userId: savedUser.id,
+          userEmail: savedUser.email,
+        },
+        {
+          delay: 10000, // 10 second delay
+          jobId: `team-creation-${savedUser.id}`, // Prevent duplicate jobs
+        }
+      );
 
-      logger.info(`Team creation job queued for user: ${savedUser.email} (ID: ${savedUser.id})`);
+      logger.info(
+        `Team creation job queued for user: ${savedUser.email} (ID: ${savedUser.id})`
+      );
 
       // Create JWT payload with user ID
       const jwtPayload: JwtPayload = {
         userId: savedUser.id,
         email: savedUser.email,
-        role: savedUser.role
+        role: savedUser.role,
       };
 
       const token = generateToken(jwtPayload);
@@ -89,11 +104,11 @@ export class AuthService {
         user: {
           id: savedUser.id,
           email: savedUser.email,
-          role: savedUser.role
+          role: savedUser.role,
         },
-        message: 'Registration successful. Team creation in progress...',
+        message: "Registration successful. Team creation in progress...",
         token,
-        code:201
+        code: 201,
       };
     }
   }
@@ -102,27 +117,29 @@ export class AuthService {
   async getUserById(userId: string): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['team']
+      relations: ["team"],
     });
   }
 
   // Helper method to validate user exists
   async validateUserExists(userId: string): Promise<boolean> {
     const user = await this.userRepository.findOne({
-      where: { id: userId }
+      where: { id: userId },
     });
     return !!user;
   }
 
   private async createTeamAsync(teamData: TeamCreationData): Promise<void> {
     try {
-      logger.info(`Starting team creation for user: ${teamData.userEmail} (ID: ${teamData.userId})`);
+      logger.info(
+        `Starting team creation for user: ${teamData.userEmail} (ID: ${teamData.userId})`
+      );
 
       // Create team
       const team = this.teamRepository.create({
-        name: `${teamData.userEmail.split('@')[0]} FC`,
+        name: `${teamData.userEmail.split("@")[0]} FC`,
         budget: 5000000,
-        user: { id: teamData.userId }
+        user: { id: teamData.userId },
       });
 
       const savedTeam = await this.teamRepository.save(team);
@@ -130,28 +147,33 @@ export class AuthService {
       // Create players asynchronously
       await this.createPlayersAsync(savedTeam.id);
 
-      logger.info(`Team creation completed for user: ${teamData.userEmail} (ID: ${teamData.userId})`);
+      logger.info(
+        `Team creation completed for user: ${teamData.userEmail} (ID: ${teamData.userId})`
+      );
     } catch (error) {
-      logger.error(`Team creation failed for user ${teamData.userEmail} (ID: ${teamData.userId}):`, error);
+      logger.error(
+        `Team creation failed for user ${teamData.userEmail} (ID: ${teamData.userId}):`,
+        error
+      );
     }
   }
 
   private async createPlayersAsync(teamId: string): Promise<void> {
     const players = [
       // Goalkeepers (3)
-      ...this.generatePlayers('GK', 3, 18, 35),
+      ...this.generatePlayers("GK", 3, 18, 35),
       // Defenders (6)
-      ...this.generatePlayers('DEF', 6, 18, 35),
+      ...this.generatePlayers("DEF", 6, 18, 35),
       // Midfielders (6)
-      ...this.generatePlayers('MID', 6, 18, 35),
+      ...this.generatePlayers("MID", 6, 18, 35),
       // Attackers (5)
-      ...this.generatePlayers('FWD', 5, 18, 35)
+      ...this.generatePlayers("FWD", 5, 18, 35),
     ];
 
     for (const playerData of players) {
       const player = this.playerRepository.create({
         ...playerData,
-        team: { id: teamId }
+        team: { id: teamId },
       });
       await this.playerRepository.save(player);
     }
@@ -159,7 +181,12 @@ export class AuthService {
     logger.info(`Created ${players.length} players for team: ${teamId}`);
   }
 
-  private generatePlayers(position: string, count: number, minAge: number, maxAge: number): any[] {
+  private generatePlayers(
+    position: string,
+    count: number,
+    minAge: number,
+    maxAge: number
+  ): any[] {
     const players = [];
     const names = this.getPlayerNames(position);
 
@@ -173,7 +200,7 @@ export class AuthService {
         position,
         age,
         overall,
-        value
+        value,
       });
     }
 
@@ -182,12 +209,38 @@ export class AuthService {
 
   private getPlayerNames(position: string): string[] {
     const nameLists = {
-      GK: ['David De Gea', 'Alisson Becker', 'Ederson', 'Thibaut Courtois', 'Marc-André ter Stegen'],
-      DEF: ['Virgil van Dijk', 'Rúben Dias', 'Sergio Ramos', 'Kalidou Koulibaly', 'Marquinhos', 'Aymeric Laporte'],
-      MID: ['Kevin De Bruyne', 'Luka Modrić', 'Toni Kroos', 'Frenkie de Jong', 'Jorginho', 'N\'Golo Kanté'],
-      FWD: ['Lionel Messi', 'Cristiano Ronaldo', 'Kylian Mbappé', 'Erling Haaland', 'Robert Lewandowski']
+      GK: [
+        "David De Gea",
+        "Alisson Becker",
+        "Ederson",
+        "Thibaut Courtois",
+        "Marc-André ter Stegen",
+      ],
+      DEF: [
+        "Virgil van Dijk",
+        "Rúben Dias",
+        "Sergio Ramos",
+        "Kalidou Koulibaly",
+        "Marquinhos",
+        "Aymeric Laporte",
+      ],
+      MID: [
+        "Kevin De Bruyne",
+        "Luka Modrić",
+        "Toni Kroos",
+        "Frenkie de Jong",
+        "Jorginho",
+        "N'Golo Kanté",
+      ],
+      FWD: [
+        "Lionel Messi",
+        "Cristiano Ronaldo",
+        "Kylian Mbappé",
+        "Erling Haaland",
+        "Robert Lewandowski",
+      ],
     };
 
-    return nameLists[position as keyof typeof nameLists] || ['Player'];
+    return nameLists[position as keyof typeof nameLists] || ["Player"];
   }
-} 
+}

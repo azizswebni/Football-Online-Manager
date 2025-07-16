@@ -1,12 +1,20 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Team } from './Team';
-import { Transfer } from './Transfer';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from "typeorm";
+import { Team } from "./Team";
+import { Transfer } from "./Transfer";
 
-export type PlayerPosition = 'GK' | 'DEF' | 'MID' | 'FWD';
+export type PlayerPosition = "GK" | "DEF" | "MID" | "FWD";
 
 @Entity()
 export class Player {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id!: string;
 
   @Column()
@@ -24,10 +32,10 @@ export class Player {
   @Column()
   value!: number;
 
-  @ManyToOne(() => Team, team => team.players)
+  @ManyToOne(() => Team, (team) => team.players)
   team!: Team;
 
-  @OneToMany(() => Transfer, transfer => transfer.player)
+  @OneToMany(() => Transfer, (transfer) => transfer.player)
   transfers!: Transfer[];
 
   @CreateDateColumn()
@@ -35,4 +43,4 @@ export class Player {
 
   @UpdateDateColumn()
   updatedAt!: Date;
-} 
+}
